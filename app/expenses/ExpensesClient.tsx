@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
+import { X } from 'lucide-react'
 
 type Category = { id: string, name: string }
 
@@ -85,8 +86,14 @@ export function ExpensesClient() {
 
   return (
     <div className="p-6 space-y-6">
-      <header>
+      <header className="flex justify-between items-center">
         <h1 className="text-xl font-bold text-gray-900">Catat Pengeluaran</h1>
+        <button 
+          onClick={() => router.back()}
+          className="bg-gray-100 text-gray-500 p-2 rounded-full active:scale-95 transition-transform"
+        >
+          <X size={24} />
+        </button>
       </header>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
