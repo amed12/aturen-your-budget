@@ -43,7 +43,7 @@ Jalankan migrasi database lalu seed kategori default (Makan, Transport, Belanja,
 
 ```bash
 npx prisma db push
-npm run prisma db seed
+npx prisma db seed
 ```
 
 ### 5. Jalankan Development Server
