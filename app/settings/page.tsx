@@ -9,7 +9,7 @@ import toast from 'react-hot-toast'
 import { LogOut } from 'lucide-react'
 
 const budgetSchema = z.object({
-  total_amount: z.number().min(1, 'Budget harus lebih dari 0'),
+  total_amount: z.string().min(1, 'Budget harus diisi'),
 })
 
 type BudgetForm = z.infer<typeof budgetSchema>
@@ -32,7 +32,7 @@ export default function SettingsPage() {
         const res = await fetch(`/api/budgets?month=${month}&year=${year}`)
         const json = await res.json()
         if (json.budget) {
-          setValue('total_amount', Number(json.budget.total_amount))
+          setValue('total_amount', new Intl.NumberFormat('id-ID').format(Number(json.budget.total_amount)))
         }
       } catch (e) {
         // ignore
@@ -44,10 +44,11 @@ export default function SettingsPage() {
   const onSubmit = async (data: BudgetForm) => {
     setIsLoading(true)
     try {
+      const rawAmount = Number(data.total_amount.toString().replace(/\D/g, ''))
       const res = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...data, month, year })
+        body: JSON.stringify({ total_amount: rawAmount, month, year })
       })
       
       if (!res.ok) throw new Error('Failed')
@@ -84,11 +85,16 @@ export default function SettingsPage() {
           <div>
             <label className="block text-sm font-medium text-gray-700">Total Budget (Rp)</label>
             <input
-              {...register('total_amount', { valueAsNumber: true })}
-              type="number"
+              {...register('total_amount', {
+                onChange: (e) => {
+                  const raw = e.target.value.replace(/\D/g, '')
+                  e.target.value = raw ? new Intl.NumberFormat('id-ID').format(Number(raw)) : ''
+                }
+              })}
+              type="text"
               inputMode="numeric"
               className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-3 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="5000000"
+              placeholder="5.000.000"
             />
             {errors.total_amount && <p className="mt-1 text-sm text-red-500">{errors.total_amount.message}</p>}
           </div>

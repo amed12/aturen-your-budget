@@ -51,7 +51,9 @@ export function ExpensesClient() {
       router.push('/settings')
       return
     }
-    if (!data.amount || !data.category_id) {
+    const rawAmount = Number(data.amount.toString().replace(/\D/g, ''))
+
+    if (!rawAmount || !data.category_id) {
       toast.error('Nominal dan kategori wajib diisi')
       return
     }
@@ -63,7 +65,7 @@ export function ExpensesClient() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           budget_id: budgetId,
-          amount: Number(data.amount),
+          amount: rawAmount,
           category_id: data.category_id,
           note: data.note
         })
@@ -92,10 +94,14 @@ export function ExpensesClient() {
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-gray-400 font-bold">Rp</span>
           <input
-            {...register('amount')}
-            type="number"
+            {...register('amount', {
+              onChange: (e) => {
+                const raw = e.target.value.replace(/\D/g, '')
+                e.target.value = raw ? new Intl.NumberFormat('id-ID').format(Number(raw)) : ''
+              }
+            })}
+            type="text"
             inputMode="numeric"
-            pattern="[0-9]*"
             ref={(e) => {
               register('amount').ref(e)
               // @ts-ignore

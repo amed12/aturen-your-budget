@@ -93,7 +93,7 @@ export function ReservedClient() {
         body: JSON.stringify({
           budget_id: budgetId,
           name: newName,
-          amount: Number(newAmount)
+          amount: Number(newAmount.replace(/\D/g, ''))
         })
       })
 
@@ -154,11 +154,14 @@ export function ReservedClient() {
             className="w-full bg-gray-50 border-none rounded-lg px-4 py-3 focus:ring-1 focus:ring-primary-500"
           />
           <input
-            type="number"
-            placeholder="Nominal (ex: 500000)"
+            type="text"
+            placeholder="Nominal (ex: 500.000)"
             value={newAmount}
             inputMode="numeric"
-            onChange={e => setNewAmount(e.target.value)}
+            onChange={e => {
+              const raw = e.target.value.replace(/\D/g, '')
+              setNewAmount(raw ? new Intl.NumberFormat('id-ID').format(Number(raw)) : '')
+            }}
             className="w-full bg-gray-50 border-none rounded-lg px-4 py-3 focus:ring-1 focus:ring-primary-500"
           />
           <div className="flex gap-2">
