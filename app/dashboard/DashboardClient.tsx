@@ -74,7 +74,48 @@ export function DashboardClient() {
     }
   }
 
-  if (isLoading) return <div className="p-6 text-center text-gray-500">Memuat...</div>
+  if (isLoading) {
+    return (
+      <div className="p-6 space-y-8 animate-pulse">
+        <header className="flex justify-between items-center">
+          <div className="space-y-2">
+            <div className="h-6 w-24 bg-gray-200 rounded"></div>
+            <div className="h-4 w-32 bg-gray-200 rounded"></div>
+          </div>
+          <div className="w-10 h-10 bg-gray-200 rounded-full"></div>
+        </header>
+
+        <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6">
+          <div className="space-y-2">
+            <div className="h-4 w-48 bg-gray-200 rounded"></div>
+            <div className="h-10 w-40 bg-gray-200 rounded"></div>
+          </div>
+          <div className="space-y-2">
+            <div className="flex justify-between">
+              <div className="h-3 w-16 bg-gray-200 rounded"></div>
+              <div className="h-3 w-24 bg-gray-200 rounded"></div>
+            </div>
+            <div className="h-3 w-full bg-gray-200 rounded-full"></div>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          <div className="h-6 w-32 bg-gray-200 rounded"></div>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex justify-between items-center">
+                <div className="space-y-2">
+                  <div className="h-3 w-20 bg-gray-200 rounded"></div>
+                  <div className="h-4 w-32 bg-gray-200 rounded"></div>
+                </div>
+                <div className="h-5 w-24 bg-gray-200 rounded"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (needsBudget) {
     return (
@@ -182,7 +223,7 @@ export function DashboardClient() {
       {data.top_category && (
         <Link href="/reports" className="block bg-primary-50 rounded-xl p-4 border border-primary-100 active:scale-[0.99] transition-transform">
           <p className="text-sm text-primary-800">
-            <span className="font-bold">Insight:</span> Pengeluaran terbesar bulan ini untuk <strong>{data.top_category.name}</strong> ({formatter.format(data.top_category.total)})
+            <span className="font-bold">Insight:</span> <strong>{data.top_category.name}</strong> menghabiskan <strong>{formatter.format(data.top_category.total)}</strong> ({data.total_budget > 0 ? Math.round((data.top_category.total / data.total_budget) * 100) : 0}% dari budget)
           </p>
           <div className="mt-2 text-xs font-bold text-primary-600 flex items-center gap-1">
             Lihat Laporan Detail <span aria-hidden="true">&rarr;</span>
