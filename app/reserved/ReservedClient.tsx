@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { CheckCircle2, Circle, AlertCircle, Plus, Trash2 } from 'lucide-react'
+import { Modal } from '@/components/Modal'
 
 type ReservedItem = {
   id: string
@@ -22,6 +23,10 @@ export function ReservedClient() {
   const [isAdding, setIsAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
+  
+  // Delete confirm state
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
 
   useEffect(() => {
     fetchData()
@@ -66,15 +71,19 @@ export function ReservedClient() {
     }
   }
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Hapus alokasi ini?')) return
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setIsDeleting(true)
     try {
-      const res = await fetch(`/api/reserved/${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/reserved/${deleteId}`, { method: 'DELETE' })
       if (!res.ok) throw new Error()
       toast.success('Dihapus')
+      setDeleteId(null)
       fetchData()
     } catch (e) {
       toast.error('Gagal menghapus')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -186,7 +195,7 @@ export function ReservedClient() {
                       <p className="text-sm text-gray-500">{formatter.format(Number(item.amount))}</p>
                     </div>
                   </div>
-                  <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
+                  <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -206,7 +215,7 @@ export function ReservedClient() {
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm">{formatter.format(Number(item.amount))}</p>
                   </div>
-                  <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
+                  <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
                     <Trash2 size={18} />
                   </button>
                 </div>
@@ -221,6 +230,28 @@ export function ReservedClient() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Hapus Dana Wajib">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Apakah Anda yakin ingin menghapus alokasi dana wajib ini?</p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setDeleteId(null)} 
+              className="flex-1 py-3 text-gray-700 font-medium bg-gray-100 rounded-lg"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={handleDelete} 
+              disabled={isDeleting}
+              className="flex-1 py-3 bg-danger-600 text-white rounded-lg font-medium disabled:opacity-50"
+            >
+              {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
