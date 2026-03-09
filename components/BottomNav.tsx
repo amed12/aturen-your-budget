@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { Home, PlusCircle, Bookmark, Settings } from 'lucide-react'
+import { Home, PlusCircle, Bookmark, Settings, PieChart } from 'lucide-react'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -14,6 +14,7 @@ export function BottomNav() {
     { name: 'Home', href: '/dashboard', icon: Home },
     { name: 'Reserved', href: '/reserved', icon: Bookmark },
     { name: 'Catat', href: '/expenses', icon: PlusCircle, isMain: true },
+    { name: 'Laporan', href: '/reports', icon: PieChart },
     { name: 'Settings', href: '/settings', icon: Settings },
   ]
 
