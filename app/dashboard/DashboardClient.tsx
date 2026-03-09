@@ -11,6 +11,13 @@ type DashboardData = {
   total_spent: number
   remaining_budget: number
   top_category: { name: string, total: number } | null
+  recent_expenses: Array<{
+    id: string
+    amount: number
+    note: string | null
+    category_name: string
+    date: string
+  }>
 }
 
 export function DashboardClient() {
@@ -130,6 +137,34 @@ export function DashboardClient() {
           </p>
         </div>
       )}
+
+      {/* History Section */}
+      <div className="space-y-4">
+        <div className="flex justify-between items-center px-1">
+          <h2 className="text-lg font-bold text-gray-900">Riwayat Terakhir</h2>
+        </div>
+        
+        <div className="space-y-3">
+          {data.recent_expenses.length > 0 ? (
+            data.recent_expenses.map((exp) => (
+              <div key={exp.id} className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex justify-between items-center active:scale-[0.99] transition-transform">
+                <div className="flex flex-col">
+                  <span className="text-xs font-bold text-primary-600 uppercase tracking-wider mb-0.5">{exp.category_name}</span>
+                  <span className="font-semibold text-gray-900">{exp.note || 'Tanpa catatan'}</span>
+                  <span className="text-xs text-gray-400">{new Date(exp.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
+                </div>
+                <div className="text-right">
+                  <span className="font-bold text-gray-900">{formatter.format(exp.amount)}</span>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div className="text-center p-8 bg-gray-50 rounded-xl border border-dashed border-gray-200">
+              <p className="text-sm text-gray-500">Belum ada pengeluaran tercatat.</p>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Quick Action */}
       <div className="pt-4">

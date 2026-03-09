@@ -17,9 +17,15 @@ export async function GET(request: Request) {
     const budget = await prisma.budget.findUnique({ where: { id: budget_id } })
     if (!budget || budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-    const [reservedItems, expenses] = await Promise.all([
+    const [reservedItems, expenses, recentExpenses] = await Promise.all([
       prisma.reservedItem.findMany({ where: { budget_id } }),
-      prisma.expense.findMany({ where: { budget_id }, include: { category: true } })
+      prisma.expense.findMany({ where: { budget_id }, include: { category: true } }),
+      prisma.expense.findMany({
+        where: { budget_id },
+        include: { category: true },
+        orderBy: { created_at: 'desc' },
+        take: 5
+      })
     ])
 
     const total_amount = Number(budget.total_amount)
@@ -64,7 +70,14 @@ export async function GET(request: Request) {
       total_spent: spent,
       remaining_budget: remaining,
       top_category: topCategory,
-      top_category_amount: topCategory ? max : 0
+      top_category_amount: topCategory ? max : 0,
+      recent_expenses: recentExpenses.map((exp: any) => ({
+        id: exp.id,
+        amount: Number(exp.amount),
+        note: exp.note,
+        category_name: exp.category.name,
+        date: exp.date
+      }))
     })
   } catch (error) {
     return NextResponse.json({ error: 'Failed to fetch dashboard' }, { status: 500 })
