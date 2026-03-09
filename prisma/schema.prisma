@@ -1,0 +1,64 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String       @id @default(uuid())
+  username      String       @unique
+  password_hash String
+  created_at    DateTime     @default(now())
+  budgets       Budget[]
+  categories    Category[]
+}
+
+model Budget {
+  id           String         @id @default(uuid())
+  user_id      String
+  month        Int
+  year         Int
+  total_amount Decimal        @db.Decimal(12, 2)
+  created_at   DateTime       @default(now())
+  user         User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expenses     Expense[]
+  reserved     ReservedItem[]
+
+  @@unique([user_id, month, year])
+}
+
+model ReservedItem {
+  id         String    @id @default(uuid())
+  budget_id  String
+  name       String
+  amount     Decimal   @db.Decimal(12, 2)
+  is_paid    Boolean   @default(false)
+  paid_at    DateTime?
+  created_at DateTime  @default(now())
+  budget     Budget    @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+}
+
+model Category {
+  id         String    @id @default(uuid())
+  user_id    String?   // null means it's a default category available to everyone
+  name       String
+  is_default Boolean   @default(false)
+  created_at DateTime  @default(now())
+  user       User?     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  expenses   Expense[]
+}
+
+model Expense {
+  id          String   @id @default(uuid())
+  budget_id   String
+  category_id String
+  amount      Decimal  @db.Decimal(12, 2)
+  note        String?
+  date        DateTime @default(now()) @db.Date
+  created_at  DateTime @default(now())
+  budget      Budget   @relation(fields: [budget_id], references: [id], onDelete: Cascade)
+  category    Category @relation(fields: [category_id], references: [id])
+}

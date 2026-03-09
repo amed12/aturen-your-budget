@@ -1,0 +1,21 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary-50: #eff6ff;
+  --color-primary-100: #dbeafe;
+  --color-primary-500: #3b82f6;
+  --color-primary-600: #2563eb;
+  
+  --color-success-500: #22c55e;
+  --color-warning-500: #eab308;
+  --color-danger-500: #ef4444;
+}
+
+body {
+  background-color: #f9fafb;
+}
+
+/* Hide scrollbar for cleaner mobile look */
+::-webkit-scrollbar {
+  display: none;
+}
