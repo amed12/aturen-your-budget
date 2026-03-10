@@ -28,6 +28,10 @@ export function ReservedClient() {
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
 
+  // Paid confirm state
+  const [confirmPayItem, setConfirmPayItem] = useState<ReservedItem | null>(null)
+  const [isUpdating, setIsUpdating] = useState(false)
+
   useEffect(() => {
     fetchData()
   }, [])
@@ -47,7 +51,7 @@ export function ReservedClient() {
       const res = await fetch(`/api/reserved?budget_id=${budgetJson.budget.id}`)
       const json = await res.json()
       setItems(json)
-    } catch (e) {
+    } catch (_e) {
       toast.error('Gagal memuat data reserved')
     } finally {
       setIsLoading(false)
@@ -55,6 +59,7 @@ export function ReservedClient() {
   }
 
   const togglePaid = async (item: ReservedItem) => {
+    setIsUpdating(true)
     try {
       const res = await fetch(`/api/reserved/${item.id}`, {
         method: 'PATCH',
@@ -64,10 +69,13 @@ export function ReservedClient() {
 
       if (!res.ok) throw new Error()
       
-      toast.success(item.is_paid ? 'Dibatalkan' : 'Ditandai sudah dibayar 💰')
+      toast.success(item.is_paid ? 'Dibatalkan' : 'Pengeluaran wajib tercatat 💰')
+      setConfirmPayItem(null)
       fetchData() // refresh list
-    } catch (e) {
+    } catch (_e) {
       toast.error('Gagal mengupdate')
+    } finally {
+      setIsUpdating(false)
     }
   }
 
@@ -80,7 +88,7 @@ export function ReservedClient() {
       toast.success('Dihapus')
       setDeleteId(null)
       fetchData()
-    } catch (e) {
+    } catch (_e) {
       toast.error('Gagal menghapus')
     } finally {
       setIsDeleting(false)
@@ -113,7 +121,7 @@ export function ReservedClient() {
       setNewAmount('')
       setIsAdding(false)
       fetchData()
-    } catch (error) {
+    } catch (_error) {
       toast.error('Gagal menambah')
     }
   }
@@ -187,8 +195,8 @@ export function ReservedClient() {
             <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Belum Dibayar</h2>
             <div className="space-y-2">
               {unpaidItems.map(item => (
-                <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-orange-100 active:scale-[0.99] transition-transform">
-                  <div className="flex items-center gap-4 flex-1" onClick={() => togglePaid(item)}>
+                <div key={item.id} className="flex items-center justify-between p-4 bg-white rounded-xl shadow-sm border border-orange-100 active:scale-[0.99] transition-transform cursor-pointer">
+                  <div className="flex items-center gap-4 flex-1" onClick={() => setConfirmPayItem(item)}>
                     <Circle size={24} className="text-gray-300" />
                     <div>
                       <p className="font-semibold text-gray-900">{item.name}</p>
@@ -209,9 +217,9 @@ export function ReservedClient() {
             <h2 className="text-sm font-semibold text-gray-500 uppercase tracking-wider">Sudah Dibayar</h2>
             <div className="space-y-2">
               {paidItems.map(item => (
-                <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl opacity-75">
-                  <CheckCircle2 size={24} className="text-success-500 flex-shrink-0" onClick={() => togglePaid(item)} />
-                  <div className="flex-1 line-through text-gray-500">
+                <div key={item.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl opacity-75 cursor-pointer">
+                  <CheckCircle2 size={24} className="text-success-500 flex-shrink-0" onClick={() => setConfirmPayItem(item)} />
+                  <div className="flex-1 line-through text-gray-500" onClick={() => setConfirmPayItem(item)}>
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm">{formatter.format(Number(item.amount))}</p>
                   </div>
@@ -245,9 +253,41 @@ export function ReservedClient() {
             <button 
               onClick={handleDelete} 
               disabled={isDeleting}
-              className="flex-1 py-3 bg-danger-600 text-white rounded-lg font-medium disabled:opacity-50"
+              className="flex-1 py-3 bg-danger-600 text-white rounded-lg font-medium outline-none focus:ring-2 focus:ring-offset-2 focus:ring-danger-500 disabled:opacity-50"
             >
               {isDeleting ? 'Menghapus...' : 'Ya, Hapus'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      {/* Pay Confirmation Modal */}
+      <Modal 
+        isOpen={!!confirmPayItem} 
+        onClose={() => setConfirmPayItem(null)} 
+        title={confirmPayItem?.is_paid ? "Batalkan Pembayaran" : "Tandatangani Pembayaran"}
+      >
+        <div className="space-y-4">
+          <div className="p-4 bg-gray-50 rounded-lg text-sm text-gray-600 border border-gray-100">
+            {confirmPayItem?.is_paid ? (
+              <p>Dana ini akan dikembalikan statusnya jadi belum dibayar. Sisa budget utama aman tidak terpengaruh.</p>
+            ) : (
+              <p>Dana <strong>{confirmPayItem?.name}</strong> sebesar {formatter.format(Number(confirmPayItem?.amount || 0))} ini sudah berhasil dibayar? Data akan terekam ke database tapi tidak mengurangi &quot;Sisa Budget Aman&quot; di depan.</p>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setConfirmPayItem(null)} 
+              className="flex-1 py-3 text-gray-700 font-medium bg-gray-100 rounded-lg"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={() => confirmPayItem && togglePaid(confirmPayItem)} 
+              disabled={isUpdating}
+              className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50"
+            >
+              {isUpdating ? 'Memproses...' : 'Ya, Lanjutkan'}
             </button>
           </div>
         </div>
