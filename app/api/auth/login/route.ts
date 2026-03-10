@@ -3,8 +3,6 @@ import { PrismaClient } from '@prisma/client'
 import { comparePassword, setSession, clearSession } from '@/lib/auth'
 import { z } from 'zod'
 
-export const dynamic = 'force-dynamic'
-
 const prisma = new PrismaClient()
 
 const loginSchema = z.object({
@@ -48,7 +46,7 @@ export async function POST(request: Request) {
   }
 }
 
-export async function DELETE(_request: Request) {
+export async function DELETE() {
   await clearSession()
   return NextResponse.json({ success: true }, { status: 200 })
 }
