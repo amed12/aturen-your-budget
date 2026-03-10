@@ -52,7 +52,7 @@ export function ReservedClient() {
       const res = await fetch(`/api/reserved?budget_id=${budgetJson.budget.id}`)
       const json = await res.json()
       setItems(json)
-    } catch (_e) {
+    } catch {
       toast.error('Gagal memuat data reserved')
     } finally {
       setIsLoading(false)
@@ -73,7 +73,7 @@ export function ReservedClient() {
       toast.success(item.is_paid ? 'Dibatalkan' : 'Pengeluaran wajib tercatat 💰')
       setConfirmPayItem(null)
       fetchData() // refresh list
-    } catch (_e) {
+    } catch {
       toast.error('Gagal mengupdate')
     } finally {
       setIsUpdating(false)
@@ -89,7 +89,7 @@ export function ReservedClient() {
       toast.success('Dihapus')
       setDeleteId(null)
       fetchData()
-    } catch (_e) {
+    } catch {
       toast.error('Gagal menghapus')
     } finally {
       setIsDeleting(false)
@@ -131,7 +131,7 @@ export function ReservedClient() {
       setIsAdding(false)
       setEditId(null)
       fetchData()
-    } catch (_error) {
+    } catch {
       toast.error('Gagal menyimpan')
     }
   }
