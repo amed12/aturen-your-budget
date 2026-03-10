@@ -8,7 +8,10 @@ const prisma = new PrismaClient()
 const budgetSchema = z.object({
   month: z.number().min(1).max(12),
   year: z.number().min(2020),
-  total_amount: z.number().min(0)
+  total_amount: z.number().min(0).optional(),
+  add_amount: z.number().min(1).optional()
+}).refine(data => data.total_amount !== undefined || data.add_amount !== undefined, {
+  message: "Harus mengisi total_amount atau add_amount"
 })
 
 export async function POST(request: Request) {
@@ -17,7 +20,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { month, year, total_amount } = budgetSchema.parse(body)
+    const { month, year, total_amount, add_amount } = budgetSchema.parse(body)
 
     let budget = await prisma.budget.findUnique({
       where: {
@@ -30,17 +33,19 @@ export async function POST(request: Request) {
     })
 
     if (budget) {
+      const newTotal = add_amount !== undefined ? Number(budget.total_amount) + add_amount : total_amount
       budget = await prisma.budget.update({
         where: { id: budget.id },
-        data: { total_amount }
+        data: { total_amount: newTotal }
       })
     } else {
+      const newTotal = add_amount !== undefined ? add_amount : total_amount
       budget = await prisma.budget.create({
         data: {
           user_id: session.user_id,
           month,
           year,
-          total_amount
+          total_amount: newTotal!
         }
       })
     }
