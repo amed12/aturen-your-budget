@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, PieChart } from 'lucide-react'
+import { ArrowLeft, PieChart, Download } from 'lucide-react'
 
 type ReportData = {
   total_spent: number
@@ -17,6 +17,7 @@ type ReportData = {
 export default function ReportsPage() {
   const router = useRouter()
   const [data, setData] = useState<ReportData | null>(null)
+  const [budgetId, setBudgetId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -37,6 +38,7 @@ export default function ReportsPage() {
         const reportRes = await fetch(`/api/reports?budget_id=${budgetJson.budget.id}`)
         const reportJson = await reportRes.json()
         setData(reportJson)
+        setBudgetId(budgetJson.budget.id)
       } catch (error) {
         console.error('Failed to load report', error)
       } finally {
@@ -63,6 +65,15 @@ export default function ReportsPage() {
               <h1 className="text-xl font-bold text-gray-900">Laporan Pengeluaran</h1>
               <p className="text-sm text-gray-500">{new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</p>
             </div>
+            {budgetId && (
+              <a 
+                href={`/api/reports/export?budget_id=${budgetId}`}
+                className="ml-auto bg-primary-50 text-primary-600 p-2 rounded-full shadow-sm active:scale-95 transition-transform"
+                title="Unduh Laporan CSV"
+              >
+                <Download size={20} />
+              </a>
+            )}
           </header>
 
           {isLoading ? (
