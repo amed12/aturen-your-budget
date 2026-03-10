@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { PlusCircle, Trash2, Edit2, PieChart } from 'lucide-react'
+import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import toast from 'react-hot-toast'
 
@@ -182,6 +182,19 @@ export function DashboardClient() {
           <PieChart size={20} />
         </Link>
       </header>
+
+      {/* Low Budget Alert Banner */}
+      {usagePercent >= 85 && (
+        <div className="bg-danger-50 border border-danger-200 rounded-xl p-4 flex items-start gap-3 animate-pulse">
+          <div className="text-danger-500 mt-0.5"><AlertTriangle size={20} /></div>
+          <div>
+            <h3 className="text-sm font-bold text-danger-900">Peringatan Budget!</h3>
+            <p className="text-xs text-danger-700 mt-1">
+              Budget Anda sudah terpakai {usagePercent}%. Hati-hati dalam melakukan pengeluaran baru.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Main Card */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100 space-y-6 relative overflow-hidden">

@@ -115,19 +115,34 @@ export function ExpensesClient() {
 
     setIsLoading(true)
     try {
+      const payload = {
+        budget_id: budgetId,
+        amount: rawAmount,
+        category_id: data.category_id,
+        note: data.note,
+        date: new Date(data.date).toISOString()
+      }
+
+      if (!navigator.onLine) {
+        // OFFLINE MODE SAVING logic
+        const existing = localStorage.getItem('aturen_offline_queue')
+        const queue = existing ? JSON.parse(existing) : []
+        queue.push(payload)
+        localStorage.setItem('aturen_offline_queue', JSON.stringify(queue))
+        
+        toast.success('Offline: Disimpan di HP 📱')
+        reset()
+        router.push('/dashboard')
+        return
+      }
+
       const url = editId ? `/api/expenses/${editId}` : '/api/expenses'
       const method = editId ? 'PATCH' : 'POST'
 
       const res = await fetch(url, {
         method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          budget_id: budgetId,
-          amount: rawAmount,
-          category_id: data.category_id,
-          note: data.note,
-          date: new Date(data.date).toISOString()
-        })
+        body: JSON.stringify(payload)
       })
 
       if (!res.ok) throw new Error('Failed')
