@@ -1,35 +1,32 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
-  const resolvedParams = await context.params
-  const id = resolvedParams.id
-  
   try {
+    const session = await requireAuth()
+  
+    const resolvedParams = await context.params
+    const id = resolvedParams.id
+    
     const expense = await prisma.expense.findUnique({ where: { id }, include: { budget: true } })
-    if (!expense || expense.budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
-    return NextResponse.json(expense)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch expense' }, { status: 500 })
+    if (!expense || expense.budget.user_id !== session.user_id) return apiError('Not found', 404)
+    return apiSuccess(expense)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to fetch expense', 500)
   }
 }
 
 export async function PATCH(request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
-  const resolvedParams = await context.params
-  const id = resolvedParams.id
-  
   try {
+    const session = await requireAuth()
+  
+    const resolvedParams = await context.params
+    const id = resolvedParams.id
+    
     const expense = await prisma.expense.findUnique({ where: { id }, include: { budget: true } })
-    if (!expense || expense.budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!expense || expense.budget.user_id !== session.user_id) return apiError('Not found', 404)
 
     const body = await request.json()
     const { amount, category_id, note, date } = body
@@ -43,26 +40,27 @@ export async function PATCH(request: Request, context: { params: Promise<{ id: s
         date: date ? new Date(date) : expense.date
       }
     })
-    return NextResponse.json(updated)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to update expense' }, { status: 500 })
+    return apiSuccess(updated)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to update expense', 500)
   }
 }
 
 export async function DELETE(request: Request, context: { params: Promise<{ id: string }> }) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  
-  const resolvedParams = await context.params
-  const id = resolvedParams.id
-  
   try {
+    const session = await requireAuth()
+  
+    const resolvedParams = await context.params
+    const id = resolvedParams.id
+    
     const expense = await prisma.expense.findUnique({ where: { id }, include: { budget: true } })
-    if (!expense || expense.budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!expense || expense.budget.user_id !== session.user_id) return apiError('Not found', 404)
 
     await prisma.expense.delete({ where: { id } })
-    return NextResponse.json({ success: true })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to delete expense' }, { status: 500 })
+    return apiSuccess({ success: true })
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to delete expense', 500)
   }
 }

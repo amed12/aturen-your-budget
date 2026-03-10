@@ -1,31 +1,28 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { searchParams } = new URL(request.url)
-  const budget_id = searchParams.get('budget_id')
-  
-  if (!budget_id) return NextResponse.json({ error: 'budget_id required' }, { status: 400 })
-
   try {
+    const session = await requireAuth()
+
+    const { searchParams } = new URL(request.url)
+    const budget_id = searchParams.get('budget_id')
+    
+    if (!budget_id) return apiError('budget_id required', 400)
+
     const budget = await prisma.budget.findUnique({ where: { id: budget_id } })
-    if (!budget || budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!budget || budget.user_id !== session.user_id) return apiError('Not found', 404)
 
     const expenses = await prisma.expense.findMany({
       where: { budget_id },
       include: { category: true }
     })
 
-    const total_spent = expenses.reduce((sum: number, exp: any) => sum + Number(exp.amount), 0)
+    const total_spent = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
 
     const categoryMap: Record<string, number> = {}
-    expenses.forEach((exp: any) => {
+    expenses.forEach((exp) => {
       const catName = exp.category.name
       categoryMap[catName] = (categoryMap[catName] || 0) + Number(exp.amount)
     })
@@ -38,11 +35,12 @@ export async function GET(request: Request) {
       }))
       .sort((a, b) => b.amount - a.amount)
 
-    return NextResponse.json({
+    return apiSuccess({
       total_spent,
       breakdown
     })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to generate report' }, { status: 500 })
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to generate report', 500)
   }
 }

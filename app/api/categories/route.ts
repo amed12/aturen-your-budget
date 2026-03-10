@@ -1,47 +1,45 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET() {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
+    const session = await requireAuth()
+
     const categories = await prisma.category.findMany({
       where: {
         OR: [
-          { user_id: session.user_id },
+          { user_id: session.user_id as string },
           { is_default: true }
         ]
       },
       orderBy: { created_at: 'asc' }
     })
-    return NextResponse.json(categories)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch categories' }, { status: 500 })
+    return apiSuccess(categories)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to fetch categories', 500)
   }
 }
 
 export async function POST(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
+    const session = await requireAuth()
+
     const body = await request.json()
     const { name } = body
-    if (!name?.trim()) return NextResponse.json({ error: 'Name is required' }, { status: 400 })
+    if (!name?.trim()) return apiError('Name is required', 400)
 
     const category = await prisma.category.create({
       data: {
         name: name.trim(),
-        user_id: session.user_id,
+        user_id: session.user_id as string,
         is_default: false
       }
     })
-    return NextResponse.json(category, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create category' }, { status: 500 })
+    return apiSuccess(category, 201)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to create category', 500)
   }
 }

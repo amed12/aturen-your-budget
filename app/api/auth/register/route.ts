@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { hashPassword, setSession } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 import { z } from 'zod'
-
-const prisma = new PrismaClient()
 
 const registerSchema = z.object({
   username: z.string().min(3, 'Username minimum 3 characters'),
@@ -20,10 +18,7 @@ export async function POST(request: Request) {
     })
 
     if (existingUser) {
-      return NextResponse.json(
-        { error: 'Username already exists' },
-        { status: 400 }
-      )
+      return apiError('Username already exists', 400)
     }
 
     const password_hash = await hashPassword(password)
@@ -37,11 +32,11 @@ export async function POST(request: Request) {
 
     await setSession(user.id)
 
-    return NextResponse.json({ success: true, userId: user.id }, { status: 201 })
+    return apiSuccess({ success: true, userId: user.id }, 201)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).errors[0].message }, { status: 400 })
+      return apiError((error as any).errors[0].message, 400)
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return apiError('Internal server error', 500)
   }
 }

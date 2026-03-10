@@ -1,9 +1,7 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
 import { comparePassword, setSession, clearSession } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 import { z } from 'zod'
-
-const prisma = new PrismaClient()
 
 const loginSchema = z.object({
   username: z.string().min(1, 'Username is required'),
@@ -20,33 +18,27 @@ export async function POST(request: Request) {
     })
 
     if (!user) {
-      return NextResponse.json(
-        { error: 'Invalid username or password' },
-        { status: 401 }
-      )
+      return apiError('Invalid username or password', 401)
     }
 
     const isValid = await comparePassword(password, user.password_hash)
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: 'Invalid username or password' },
-        { status: 401 }
-      )
+      return apiError('Invalid username or password', 401)
     }
 
     await setSession(user.id)
 
-    return NextResponse.json({ success: true }, { status: 200 })
+    return apiSuccess({ success: true }, 200)
   } catch (error) {
     if (error instanceof z.ZodError) {
-      return NextResponse.json({ error: (error as any).errors[0].message }, { status: 400 })
+      return apiError((error as any).errors[0].message, 400)
     }
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    return apiError('Internal server error', 500)
   }
 }
 
 export async function DELETE() {
   await clearSession()
-  return NextResponse.json({ success: true }, { status: 200 })
+  return apiSuccess({ success: true }, 200)
 }

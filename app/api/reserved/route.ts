@@ -1,48 +1,46 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { searchParams } = new URL(request.url)
-  const budget_id = searchParams.get('budget_id')
-  
-  if (!budget_id) return NextResponse.json({ error: 'budget_id is required' }, { status: 400 })
-
   try {
+    const session = await requireAuth()
+
+    const { searchParams } = new URL(request.url)
+    const budget_id = searchParams.get('budget_id')
+    
+    if (!budget_id) return apiError('budget_id is required', 400)
+
+
     // Verify budget belongs to user
     const budget = await prisma.budget.findUnique({
       where: { id: budget_id }
     })
 
     if (!budget || budget.user_id !== session.user_id) {
-      return NextResponse.json({ error: 'Budget not found' }, { status: 404 })
+      return apiError('Budget not found', 404)
     }
 
     const reserved = await prisma.reservedItem.findMany({
       where: { budget_id },
       orderBy: { created_at: 'asc' }
     })
-    return NextResponse.json(reserved)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch reserved items' }, { status: 500 })
+    return apiSuccess(reserved)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to fetch reserved items', 500)
   }
 }
 
 export async function POST(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
+    const session = await requireAuth()
+
     const body = await request.json()
     const { budget_id, name, amount } = body
 
     if (!budget_id || !name || amount === undefined) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return apiError('Missing required fields', 400)
     }
 
     const budget = await prisma.budget.findUnique({
@@ -50,7 +48,7 @@ export async function POST(request: Request) {
     })
 
     if (!budget || budget.user_id !== session.user_id) {
-      return NextResponse.json({ error: 'Budget not found' }, { status: 404 })
+      return apiError('Budget not found', 404)
     }
 
     const item = await prisma.reservedItem.create({
@@ -61,8 +59,9 @@ export async function POST(request: Request) {
       }
     })
 
-    return NextResponse.json(item, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create reserved item' }, { status: 500 })
+    return apiSuccess(item, 201)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to create reserved item', 500)
   }
 }

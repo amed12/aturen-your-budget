@@ -1,19 +1,15 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
 
 export async function GET(request: Request) {
-  const session = await getSession()
-  if (!session) return new Response('Unauthorized', { status: 401 })
+  try {
+    const session = await requireAuth()
 
   const { searchParams } = new URL(request.url)
   const budget_id = searchParams.get('budget_id')
   
   if (!budget_id) return new Response('budget_id required', { status: 400 })
 
-  try {
     const budget = await prisma.budget.findUnique({ where: { id: budget_id } })
     if (!budget || budget.user_id !== session.user_id) return new Response('Not found', { status: 404 })
 
@@ -27,7 +23,7 @@ export async function GET(request: Request) {
     let csvData = 'Tanggal,Kategori,Nominal,Catatan\n'
 
     // Add rows
-    expenses.forEach((exp: any) => {
+    expenses.forEach((exp) => {
       const date = new Date(exp.date).toLocaleDateString('id-ID')
       const category = `"${exp.category.name.replace(/"/g, '""')}"`
       const amount = exp.amount
@@ -43,7 +39,8 @@ export async function GET(request: Request) {
         'Content-Disposition': `attachment; filename="laporan_aturan_${budget.month}_${budget.year}.csv"`
       }
     })
-  } catch (error) {
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return new Response('Unauthorized', { status: 401 })
     return new Response('Failed to generate CSV export', { status: 500 })
   }
 }

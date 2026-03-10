@@ -1,47 +1,44 @@
-import { NextResponse } from 'next/server'
-import { PrismaClient } from '@prisma/client'
-import { getSession } from '@/lib/auth'
-
-const prisma = new PrismaClient()
+import { requireAuth } from '@/lib/auth'
+import { prisma } from '@/lib/db'
+import { apiSuccess, apiError } from '@/lib/api'
 
 export async function GET(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
-  const { searchParams } = new URL(request.url)
-  const budget_id = searchParams.get('budget_id')
-  
-  if (!budget_id) return NextResponse.json({ error: 'budget_id required' }, { status: 400 })
-
   try {
+    const session = await requireAuth()
+
+    const { searchParams } = new URL(request.url)
+    const budget_id = searchParams.get('budget_id')
+    
+    if (!budget_id) return apiError('budget_id required', 400)
+
     const budget = await prisma.budget.findUnique({ where: { id: budget_id } })
-    if (!budget || budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!budget || budget.user_id !== session.user_id) return apiError('Not found', 404)
 
     const expenses = await prisma.expense.findMany({
       where: { budget_id },
       include: { category: true },
       orderBy: { date: 'desc' }
     })
-    return NextResponse.json(expenses)
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to fetch expenses' }, { status: 500 })
+    return apiSuccess(expenses)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to fetch expenses', 500)
   }
 }
 
 export async function POST(request: Request) {
-  const session = await getSession()
-  if (!session) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-
   try {
+    const session = await requireAuth()
+
     const body = await request.json()
     const { budget_id, category_id, amount, note, date } = body
 
     if (!budget_id || !category_id || amount === undefined) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
+      return apiError('Missing required fields', 400)
     }
 
     const budget = await prisma.budget.findUnique({ where: { id: budget_id } })
-    if (!budget || budget.user_id !== session.user_id) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (!budget || budget.user_id !== session.user_id) return apiError('Not found', 404)
 
     const expense = await prisma.expense.create({
       data: {
@@ -53,8 +50,9 @@ export async function POST(request: Request) {
       },
       include: { category: true }
     })
-    return NextResponse.json(expense, { status: 201 })
-  } catch (error) {
-    return NextResponse.json({ error: 'Failed to create expense' }, { status: 500 })
+    return apiSuccess(expense, 201)
+  } catch (error: any) {
+    if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
+    return apiError('Failed to create expense', 500)
   }
 }
