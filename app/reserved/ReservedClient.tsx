@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { CheckCircle2, Circle, AlertCircle, Plus, Trash2 } from 'lucide-react'
+import { CheckCircle2, Circle, AlertCircle, Plus, Trash2, Edit2 } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 type ReservedItem = {
@@ -23,6 +23,7 @@ export function ReservedClient() {
   const [isAdding, setIsAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [newAmount, setNewAmount] = useState('')
+  const [editId, setEditId] = useState<string | null>(null)
   
   // Delete confirm state
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -104,26 +105,51 @@ export function ReservedClient() {
     if (!newName || !newAmount) return
 
     try {
-      const res = await fetch('/api/reserved', {
-        method: 'POST',
+      const url = editId ? `/api/reserved/${editId}` : '/api/reserved'
+      const method = editId ? 'PATCH' : 'POST'
+      
+      const payload: { name: string, amount: number, budget_id?: string } = {
+        name: newName,
+        amount: Number(newAmount.replace(/\D/g, ''))
+      }
+      
+      if (!editId) {
+        payload.budget_id = budgetId
+      }
+
+      const res = await fetch(url, {
+        method,
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          budget_id: budgetId,
-          name: newName,
-          amount: Number(newAmount.replace(/\D/g, ''))
-        })
+        body: JSON.stringify(payload)
       })
 
       if (!res.ok) throw new Error()
       
-      toast.success('Alokasi ditambahkan')
+      toast.success(editId ? 'Alokasi diperbarui' : 'Alokasi ditambahkan')
       setNewName('')
       setNewAmount('')
       setIsAdding(false)
+      setEditId(null)
       fetchData()
     } catch (_error) {
-      toast.error('Gagal menambah')
+      toast.error('Gagal menyimpan')
     }
+  }
+
+  const handleEdit = (item: ReservedItem) => {
+    setNewName(item.name)
+    setNewAmount(item.amount)
+    setEditId(item.id)
+    setIsAdding(true)
+    // scroll to top smoothly
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }
+
+  const handleCancelAddEdit = () => {
+    setIsAdding(false)
+    setEditId(null)
+    setNewName('')
+    setNewAmount('')
   }
 
   const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
@@ -152,7 +178,10 @@ export function ReservedClient() {
           <p className="text-sm text-gray-500">Total: {formatter.format(totalReserved)}</p>
         </div>
         <button 
-          onClick={() => setIsAdding(!isAdding)}
+          onClick={() => {
+            if (isAdding) handleCancelAddEdit()
+            else setIsAdding(true)
+          }}
           className="bg-primary-100 text-primary-700 p-2 rounded-full active:scale-95 transition-transform"
         >
           <Plus size={24} />
@@ -182,8 +211,10 @@ export function ReservedClient() {
             className="w-full bg-gray-50 border-none rounded-lg px-4 py-3 focus:ring-1 focus:ring-primary-500"
           />
           <div className="flex gap-2">
-            <button type="button" onClick={() => setIsAdding(false)} className="flex-1 py-3 text-gray-500 font-medium">Batal</button>
-            <button type="submit" disabled={!newName || !newAmount} className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50">Simpan</button>
+            <button type="button" onClick={handleCancelAddEdit} className="flex-1 py-3 text-gray-500 font-medium">Batal</button>
+            <button type="submit" disabled={!newName || !newAmount} className="flex-1 py-3 bg-primary-600 text-white rounded-lg font-medium disabled:opacity-50">
+              {editId ? 'Perbarui' : 'Simpan'}
+            </button>
           </div>
         </form>
       )}
@@ -203,9 +234,14 @@ export function ReservedClient() {
                       <p className="text-sm text-gray-500">{formatter.format(Number(item.amount))}</p>
                     </div>
                   </div>
-                  <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex gap-1 border-l border-gray-100 pl-2 ml-2">
+                    <button onClick={() => handleEdit(item)} className="p-2 text-gray-300 hover:text-primary-600">
+                      <Edit2 size={18} />
+                    </button>
+                    <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
@@ -223,9 +259,14 @@ export function ReservedClient() {
                     <p className="font-medium">{item.name}</p>
                     <p className="text-sm">{formatter.format(Number(item.amount))}</p>
                   </div>
-                  <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-300 hover:text-danger-500">
-                    <Trash2 size={18} />
-                  </button>
+                  <div className="flex gap-1 border-l border-gray-200 pl-2 ml-2">
+                    <button onClick={() => handleEdit(item)} className="p-2 text-gray-400 hover:text-primary-600">
+                      <Edit2 size={18} />
+                    </button>
+                    <button onClick={() => setDeleteId(item.id)} className="p-2 text-gray-400 hover:text-danger-500">
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
