@@ -3,6 +3,8 @@ import { PrismaClient } from '@prisma/client'
 import { hashPassword, setSession } from '@/lib/auth'
 import { z } from 'zod'
 
+export const dynamic = 'force-dynamic'
+
 const prisma = new PrismaClient()
 
 const registerSchema = z.object({

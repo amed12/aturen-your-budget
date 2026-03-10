@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
@@ -7,11 +7,14 @@ import { OfflineSync } from '@/components/OfflineSync';
 
 const inter = Inter({ subsets: ["latin"] });
 
+export const viewport: Viewport = {
+  themeColor: "#111827",
+};
+
 export const metadata: Metadata = {
   title: "Aturen - Budgeting Keluarga",
   description: "Aplikasi pencatatan keuangan keluarga paling simpel",
   manifest: "/manifest.json",
-  themeColor: "#111827",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
