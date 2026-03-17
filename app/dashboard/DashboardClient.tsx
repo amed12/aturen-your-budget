@@ -2,9 +2,19 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
-import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle } from 'lucide-react'
+import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import toast from 'react-hot-toast'
+
+type SpendingAdvice = {
+  safe_daily: number
+  safe_weekly: number
+  today_spent: number
+  this_week_spent: number
+  avg_daily_spent: number
+  remaining_days: number
+  spending_status: 'safe' | 'warning' | 'danger'
+}
 
 type DashboardData = {
   total_budget: number
@@ -20,6 +30,7 @@ type DashboardData = {
     category_name: string
     date: string
   }>
+  spending_advice: SpendingAdvice
 }
 
 export function DashboardClient() {
@@ -231,6 +242,136 @@ export function DashboardClient() {
           </div>
         </div>
       </div>
+
+      {/* 💡 Spending Advice Card */}
+      {data.spending_advice && (
+        <div className={`rounded-2xl p-5 shadow-sm border space-y-4 ${
+          data.spending_advice.spending_status === 'safe' 
+            ? 'bg-emerald-50 border-emerald-100'
+            : data.spending_advice.spending_status === 'warning'
+            ? 'bg-amber-50 border-amber-100'
+            : 'bg-danger-50 border-danger-100'
+        }`}>
+          {/* Status Header */}
+          <div className="flex items-center gap-3">
+            <div className={`p-2 rounded-full ${
+              data.spending_advice.spending_status === 'safe' 
+                ? 'bg-emerald-100 text-emerald-600'
+                : data.spending_advice.spending_status === 'warning'
+                ? 'bg-amber-100 text-amber-600'
+                : 'bg-danger-100 text-danger-600'
+            }`}>
+              {data.spending_advice.spending_status === 'safe' 
+                ? <ShieldCheck size={20} />
+                : data.spending_advice.spending_status === 'warning'
+                ? <ShieldAlert size={20} />
+                : <ShieldX size={20} />
+              }
+            </div>
+            <div>
+              <h3 className={`font-bold text-sm ${
+                data.spending_advice.spending_status === 'safe' 
+                  ? 'text-emerald-700'
+                  : data.spending_advice.spending_status === 'warning'
+                  ? 'text-amber-700'
+                  : 'text-danger-700'
+              }`}>
+                {data.spending_advice.spending_status === 'safe' 
+                  ? '✅ Pengeluaran Aman'
+                  : data.spending_advice.spending_status === 'warning'
+                  ? '⚠️ Mendekati Batas Harian'
+                  : '🚨 Budget Habis!'}
+              </h3>
+              <p className={`text-xs ${
+                data.spending_advice.spending_status === 'safe' 
+                  ? 'text-emerald-600'
+                  : data.spending_advice.spending_status === 'warning'
+                  ? 'text-amber-600'
+                  : 'text-danger-600'
+              }`}>
+                {data.spending_advice.remaining_days} hari tersisa bulan ini
+              </p>
+            </div>
+          </div>
+
+          {/* Daily & Weekly Limit */}
+          <div className="grid grid-cols-2 gap-3">
+            <div className="bg-white/70 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <Wallet size={13} className="text-gray-500" />
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aman / Hari</p>
+              </div>
+              <p className={`text-base font-bold ${
+                data.spending_advice.spending_status === 'danger' ? 'text-danger-600' : 'text-gray-900'
+              }`}>
+                {formatter.format(data.spending_advice.safe_daily)}
+              </p>
+            </div>
+            <div className="bg-white/70 rounded-xl p-3 space-y-1">
+              <div className="flex items-center gap-1.5">
+                <CalendarDays size={13} className="text-gray-500" />
+                <p className="text-[10px] font-bold text-gray-500 uppercase tracking-wider">Aman / Minggu</p>
+              </div>
+              <p className={`text-base font-bold ${
+                data.spending_advice.spending_status === 'danger' ? 'text-danger-600' : 'text-gray-900'
+              }`}>
+                {formatter.format(data.spending_advice.safe_weekly)}
+              </p>
+            </div>
+          </div>
+
+          {/* Today's Progress */}
+          <div className="bg-white/70 rounded-xl p-3 space-y-2">
+            <div className="flex justify-between items-center">
+              <span className="text-xs font-semibold text-gray-600">Hari ini sudah keluar</span>
+              <span className={`text-xs font-bold ${
+                data.spending_advice.today_spent > data.spending_advice.safe_daily 
+                  ? 'text-danger-600' 
+                  : 'text-emerald-600'
+              }`}>
+                {formatter.format(data.spending_advice.today_spent)} / {formatter.format(data.spending_advice.safe_daily)}
+              </span>
+            </div>
+            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+              <div 
+                className={`h-full transition-all duration-500 ease-out rounded-full ${
+                  data.spending_advice.safe_daily > 0 && data.spending_advice.today_spent / data.spending_advice.safe_daily > 1
+                    ? 'bg-danger-500'
+                    : data.spending_advice.safe_daily > 0 && data.spending_advice.today_spent / data.spending_advice.safe_daily > 0.7
+                    ? 'bg-amber-500'
+                    : 'bg-emerald-500'
+                }`}
+                style={{ 
+                  width: `${Math.min(100, data.spending_advice.safe_daily > 0 ? (data.spending_advice.today_spent / data.spending_advice.safe_daily) * 100 : 0)}%` 
+                }}
+              />
+            </div>
+          </div>
+
+          {/* Avg Spending */}
+          <div className="flex items-center gap-2 px-1">
+            <TrendingUp size={13} className="text-gray-500" />
+            <p className="text-xs text-gray-600">
+              Rata-rata harianmu: <span className="font-bold text-gray-800">{formatter.format(data.spending_advice.avg_daily_spent)}</span>
+              {data.spending_advice.avg_daily_spent > data.spending_advice.safe_daily && data.spending_advice.safe_daily > 0 && (
+                <span className="text-danger-600 font-semibold"> — terlalu tinggi!</span>
+              )}
+            </p>
+          </div>
+
+          {/* Tips */}
+          {data.spending_advice.spending_status !== 'danger' && (
+            <p className="text-[11px] text-gray-500 italic px-1">
+              💡 Tip: Usahakan pengeluaran harian di bawah {formatter.format(data.spending_advice.safe_daily)} agar budget aman sampai akhir bulan.
+            </p>
+          )}
+          {data.spending_advice.spending_status === 'danger' && (
+            <p className="text-[11px] text-danger-600 font-medium px-1">
+              ⛔ Budget bulan ini sudah habis. Pertimbangkan untuk menambah pemasukan atau kurangi pengeluaran.
+            </p>
+          )}
+        </div>
+      )}
 
       {/* Insight Section */}
       {data.top_category && (

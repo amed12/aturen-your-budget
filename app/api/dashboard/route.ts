@@ -60,6 +60,47 @@ export async function GET(request: Request) {
       }
     }
 
+    // === Spending Advice Calculation ===
+    const now = new Date()
+    const currentDay = now.getDate()
+    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+    const remainingDays = Math.max(1, daysInMonth - currentDay + 1) // include today
+
+    const safeDaily = remaining > 0 ? Math.floor(remaining / remainingDays) : 0
+    const safeWeekly = remaining > 0 ? Math.floor(remaining / Math.max(1, remainingDays / 7)) : 0
+
+    // Calculate today's spending
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+    const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
+    const todaySpent = expenses
+      .filter(exp => {
+        const expDate = new Date(exp.date)
+        return expDate >= todayStart && expDate < todayEnd
+      })
+      .reduce((acc, exp) => acc + Number(exp.amount), 0)
+
+    // This week's spending (Monday start)
+    const dayOfWeek = now.getDay() || 7 // Convert Sunday(0) to 7
+    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1)
+    const thisWeekSpent = expenses
+      .filter(exp => {
+        const expDate = new Date(exp.date)
+        return expDate >= weekStart && expDate <= now
+      })
+      .reduce((acc, exp) => acc + Number(exp.amount), 0)
+
+    // Average daily spending this month
+    const daysElapsed = Math.max(1, currentDay - 1) // days before today
+    const avgDailySpent = daysElapsed > 0 ? Math.round(spent / daysElapsed) : 0
+
+    // Spending status
+    let spending_status: 'safe' | 'warning' | 'danger' = 'safe'
+    if (remaining <= 0) {
+      spending_status = 'danger'
+    } else if (todaySpent > safeDaily) {
+      spending_status = 'warning'
+    }
+
     return apiSuccess({
       total_budget: total_amount,
       total_reserved: reserved,
@@ -74,7 +115,16 @@ export async function GET(request: Request) {
         note: exp.note,
         category_name: exp.category.name,
         date: exp.date
-      }))
+      })),
+      spending_advice: {
+        safe_daily: safeDaily,
+        safe_weekly: safeWeekly,
+        today_spent: todaySpent,
+        this_week_spent: thisWeekSpent,
+        avg_daily_spent: avgDailySpent,
+        remaining_days: remainingDays,
+        spending_status,
+      }
     })
   } catch (error: any) {
     if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
