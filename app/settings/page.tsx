@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -14,6 +14,7 @@ const budgetSchema = z.object({
 
 const addIncomeSchema = z.object({
   add_amount: z.string().min(1, 'Nominal harus diisi'),
+  source: z.string().min(1, 'Sumber pemasukan harus diisi'),
 })
 
 type BudgetForm = z.infer<typeof budgetSchema>
@@ -23,6 +24,7 @@ export default function SettingsPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
+  const [incomes, setIncomes] = useState<Array<{ id: string, source: string, amount: string | number, created_at: string }>>([])
   
   const now = new Date()
   const month = now.getMonth() + 1
@@ -42,21 +44,22 @@ export default function SettingsPage() {
     resolver: zodResolver(addIncomeSchema)
   })
 
-  const fetchBudget = async () => {
+  const fetchBudget = useCallback(async () => {
     try {
       const res = await fetch(`/api/budgets?month=${month}&year=${year}`)
       const json = await res.json()
       if (json.budget) {
         setValue('total_amount', new Intl.NumberFormat('id-ID').format(Number(json.budget.total_amount)))
+        setIncomes(json.budget.incomes || [])
       }
-    } catch (e) {
+    } catch {
       // ignore
     }
-  }
+  }, [month, year, setValue])
 
   useEffect(() => {
     fetchBudget()
-  }, [month, year, setValue])
+  }, [fetchBudget])
 
   const onSubmit = async (data: BudgetForm) => {
     setIsLoading(true)
@@ -72,7 +75,7 @@ export default function SettingsPage() {
       
       toast.success('Budget diatur ulang')
       fetchBudget()
-    } catch (error) {
+    } catch {
       toast.error('Gagal mengatur budget')
     } finally {
       setIsLoading(false)
@@ -86,7 +89,7 @@ export default function SettingsPage() {
       const res = await fetch('/api/budgets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ add_amount: rawAmount, month, year })
+        body: JSON.stringify({ add_amount: rawAmount, source: data.source, month, year })
       })
       
       if (!res.ok) throw new Error('Failed')
@@ -94,7 +97,7 @@ export default function SettingsPage() {
       toast.success('Pemasukan ditambahkan ke Budget!')
       resetAdd() // clear form
       fetchBudget() // refresh main total budget box
-    } catch (error) {
+    } catch {
       toast.error('Gagal menambah pemasukan')
     } finally {
       setIsAdding(false)
@@ -155,6 +158,17 @@ export default function SettingsPage() {
 
         <form onSubmit={handleSubmitAdd(onAddIncome)} className="space-y-4">
           <div>
+            <label className="block text-sm font-medium text-gray-700">Sumber Pemasukan</label>
+            <input
+              {...registerAdd('source')}
+              type="text"
+              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-3 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
+              placeholder="Contoh: Gaji Pokok"
+            />
+            {errorsAdd.source && <p className="mt-1 text-sm text-red-500">{errorsAdd.source.message}</p>}
+          </div>
+
+          <div>
             <label className="block text-sm font-medium text-gray-700">Nominal Pemasukan Baru</label>
             <input
               {...registerAdd('add_amount', {
@@ -179,6 +193,25 @@ export default function SettingsPage() {
             {isAdding ? 'Menambahkan...' : 'Tambah ke Budget'}
           </button>
         </form>
+
+        {incomes.length > 0 && (
+          <div className="pt-6 mt-4 border-t border-gray-100 space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Riwayat Pemasukan</h3>
+            <div className="space-y-2">
+              {incomes.map((inc) => (
+                <div key={inc.id} className="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <div>
+                    <p className="font-medium text-gray-900 text-sm">{inc.source}</p>
+                    <p className="text-xs text-gray-500">{new Date(inc.created_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute:'2-digit' })}</p>
+                  </div>
+                  <p className="font-semibold text-success-600">
+                    +{new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(Number(inc.amount))}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="pt-8 border-t border-gray-200">
