@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { CheckCircle2, Circle, AlertCircle, Plus, Trash2, Edit2 } from 'lucide-react'
+import { CheckCircle2, Circle, AlertCircle, Plus, Trash2, Edit2, Wallet } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 type ReservedItem = {
@@ -13,10 +13,16 @@ type ReservedItem = {
   is_paid: boolean
 }
 
+type Budget = {
+  id: string
+  name: string
+}
+
 export function ReservedClient() {
   const router = useRouter()
   const [items, setItems] = useState<ReservedItem[]>([])
-  const [budgetId, setBudgetId] = useState<string | null>(null)
+  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   
   // New item form state
@@ -34,22 +40,37 @@ export function ReservedClient() {
   const [isUpdating, setIsUpdating] = useState(false)
 
   useEffect(() => {
-    fetchData()
+    fetchBudgets()
   }, [])
 
-  async function fetchData() {
+  useEffect(() => {
+    if (selectedBudgetId) {
+      fetchItems(selectedBudgetId)
+    }
+  }, [selectedBudgetId])
+
+  async function fetchBudgets() {
     try {
-      const now = new Date()
-      const budgetRes = await fetch(`/api/budgets?month=${now.getMonth() + 1}&year=${now.getFullYear()}`)
+      const budgetRes = await fetch(`/api/budgets/active`)
       const budgetJson = await budgetRes.json()
       
-      if (!budgetJson.budget) {
+      if (!budgetJson.budgets || budgetJson.budgets.length === 0) {
         setIsLoading(false)
         return
       }
 
-      setBudgetId(budgetJson.budget.id)
-      const res = await fetch(`/api/reserved?budget_id=${budgetJson.budget.id}`)
+      setBudgets(budgetJson.budgets)
+      setSelectedBudgetId(budgetJson.budgets[0].id)
+    } catch {
+      toast.error('Gagal memuat budget')
+      setIsLoading(false)
+    }
+  }
+
+  async function fetchItems(budgetId: string) {
+    setIsLoading(true)
+    try {
+      const res = await fetch(`/api/reserved?budget_id=${budgetId}`)
       const json = await res.json()
       setItems(json)
     } catch {
@@ -57,6 +78,10 @@ export function ReservedClient() {
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedBudgetId(e.target.value)
   }
 
   const togglePaid = async (item: ReservedItem) => {
@@ -72,7 +97,7 @@ export function ReservedClient() {
       
       toast.success(item.is_paid ? 'Dibatalkan' : 'Pengeluaran wajib tercatat 💰')
       setConfirmPayItem(null)
-      fetchData() // refresh list
+      if (selectedBudgetId) fetchItems(selectedBudgetId)
     } catch {
       toast.error('Gagal mengupdate')
     } finally {
@@ -88,7 +113,7 @@ export function ReservedClient() {
       if (!res.ok) throw new Error()
       toast.success('Dihapus')
       setDeleteId(null)
-      fetchData()
+      if (selectedBudgetId) fetchItems(selectedBudgetId)
     } catch {
       toast.error('Gagal menghapus')
     } finally {
@@ -98,8 +123,8 @@ export function ReservedClient() {
 
   const handleAdd = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!budgetId) {
-      toast.error('Atur budget bulanan dulu di Settings')
+    if (!selectedBudgetId) {
+      toast.error('Pilih budget terlebih dahulu')
       return
     }
     if (!newName || !newAmount) return
@@ -114,7 +139,7 @@ export function ReservedClient() {
       }
       
       if (!editId) {
-        payload.budget_id = budgetId
+        payload.budget_id = selectedBudgetId
       }
 
       const res = await fetch(url, {
@@ -130,7 +155,7 @@ export function ReservedClient() {
       setNewAmount('')
       setIsAdding(false)
       setEditId(null)
-      fetchData()
+      fetchItems(selectedBudgetId)
     } catch {
       toast.error('Gagal menyimpan')
     }
@@ -154,9 +179,9 @@ export function ReservedClient() {
 
   const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
 
-  if (isLoading) return <div className="p-6 text-center text-gray-500">Memuat...</div>
+  if (isLoading && items.length === 0) return <div className="p-6 text-center text-gray-500">Memuat...</div>
 
-  if (!budgetId) {
+  if (budgets.length === 0) {
     return (
       <div className="p-6 text-center space-y-4 pt-20">
         <AlertCircle className="mx-auto text-warning-500" size={48} />
@@ -172,7 +197,29 @@ export function ReservedClient() {
 
   return (
     <div className="p-6 space-y-6 pb-24">
-      <header className="flex justify-between items-center">
+      <header className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 mb-2">
+        <div className="flex-1 min-w-0 pr-2">
+          {budgets.length > 1 ? (
+             <div className="flex items-center gap-2 pl-2 text-gray-400">
+             <Wallet size={16} className="shrink-0" />
+             <select 
+               value={selectedBudgetId || ''} 
+               onChange={handleBudgetChange}
+               className="bg-transparent text-sm font-bold text-gray-900 hover:text-primary-600 focus:outline-none cursor-pointer w-full truncate border-none appearance-none"
+             >
+               {budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+             </select>
+           </div>
+          ) : (
+            <div className="flex items-center gap-2 pl-2 text-gray-400">
+               <Wallet size={16} className="shrink-0" />
+               <h1 className="text-sm font-bold text-gray-900 truncate">{budgets[0]?.name}</h1>
+            </div>
+          )}
+        </div>
+      </header>
+
+      <div className="flex justify-between items-end">
         <div>
           <h1 className="text-xl font-bold text-gray-900">Dana Wajib</h1>
           <p className="text-sm text-gray-500">Total: {formatter.format(totalReserved)}</p>
@@ -186,7 +233,7 @@ export function ReservedClient() {
         >
           <Plus size={24} />
         </button>
-      </header>
+      </div>
 
       {/* Add Form */}
       {isAdding && (
@@ -275,7 +322,7 @@ export function ReservedClient() {
 
         {items.length === 0 && !isAdding && (
           <div className="text-center p-8 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-            <p className="text-gray-500">Belum ada dana wajib yang dialokasikan.</p>
+            <p className="text-gray-500">Belum ada dana wajib yang dialokasikan di budget ini.</p>
           </div>
         )}
       </div>

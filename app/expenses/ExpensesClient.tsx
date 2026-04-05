@@ -4,15 +4,17 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
-import { X, Plus } from 'lucide-react'
+import { X, Plus, Wallet } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 type Category = { id: string, name: string }
+type Budget = { id: string, name: string }
 
 export function ExpensesClient() {
   const router = useRouter()
   const [categories, setCategories] = useState<Category[]>([])
-  const [budgetId, setBudgetId] = useState<string | null>(null)
+  const [budgets, setBudgets] = useState<Budget[]>([])
+  
   const [isLoading, setIsLoading] = useState(false)
   const [editId, setEditId] = useState<string | null>(null)
   const amountInputRef = useRef<HTMLInputElement>(null)
@@ -23,23 +25,31 @@ export function ExpensesClient() {
   const [isSavingCat, setIsSavingCat] = useState(false)
 
   const { register, handleSubmit, setValue, watch, reset } = useForm({
-    defaultValues: { amount: '', category_id: '', note: '', date: new Date().toISOString().split('T')[0] }
+    defaultValues: { amount: '', category_id: '', note: '', date: new Date().toISOString().split('T')[0], budget_id: '' }
   })
   
   const selectedCategory = watch('category_id')
+  const selectedBudget = watch('budget_id')
 
   useEffect(() => {
     async function init() {
       try {
         const params = new URLSearchParams(window.location.search)
         const eId = params.get('edit_id')
+        const bId = params.get('budget_id')
         if (eId) setEditId(eId)
 
-        // Fetch budget
-        const now = new Date()
-        const budgetRes = await fetch(`/api/budgets?month=${now.getMonth() + 1}&year=${now.getFullYear()}`)
+        // Fetch active budgets
+        const budgetRes = await fetch(`/api/budgets/active`)
         const budgetJson = await budgetRes.json()
-        if (budgetJson.budget) setBudgetId(budgetJson.budget.id)
+        if (budgetJson.budgets) {
+          setBudgets(budgetJson.budgets)
+          if (bId && budgetJson.budgets.find((b: any) => b.id === bId)) {
+            setValue('budget_id', bId)
+          } else if (budgetJson.budgets.length > 0) {
+            setValue('budget_id', budgetJson.budgets[0].id)
+          }
+        }
         
         // Fetch categories
         const catRes = await fetch('/api/categories')
@@ -55,6 +65,10 @@ export function ExpensesClient() {
             setValue('category_id', expJson.category_id)
             setValue('note', expJson.note || '')
             setValue('date', new Date(expJson.date).toISOString().split('T')[0])
+            setValue('budget_id', expJson.budget_id)
+            
+            // if budget not in active budgets, we might want to fetch it or just display ID, 
+            // but setting value is fine for now assuming they don't change budget
           }
         }
       } catch (e) {
@@ -67,7 +81,7 @@ export function ExpensesClient() {
     setTimeout(() => {
       amountInputRef.current?.focus()
     }, 100)
-  }, [])
+  }, [setValue])
 
   const fetchCategories = async () => {
     const catRes = await fetch('/api/categories')
@@ -101,8 +115,8 @@ export function ExpensesClient() {
   }
 
   const onSubmit = async (data: any) => {
-    if (!budgetId) {
-      toast.error('Harap atur budget bulanan terlebih dahulu di Settings')
+    if (!data.budget_id) {
+      toast.error('Harap atur budget terlebih dahulu di Settings')
       router.push('/settings')
       return
     }
@@ -116,24 +130,11 @@ export function ExpensesClient() {
     setIsLoading(true)
     try {
       const payload = {
-        budget_id: budgetId,
+        budget_id: data.budget_id,
         amount: rawAmount,
         category_id: data.category_id,
         note: data.note,
         date: new Date(data.date).toISOString()
-      }
-
-      if (!navigator.onLine) {
-        // OFFLINE MODE SAVING logic
-        const existing = localStorage.getItem('aturen_offline_queue')
-        const queue = existing ? JSON.parse(existing) : []
-        queue.push(payload)
-        localStorage.setItem('aturen_offline_queue', JSON.stringify(queue))
-        
-        toast.success('Offline: Disimpan di HP 📱')
-        reset()
-        router.push('/dashboard')
-        return
       }
 
       const url = editId ? `/api/expenses/${editId}` : '/api/expenses'
@@ -170,6 +171,23 @@ export function ExpensesClient() {
       </header>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        
+        {budgets.length > 1 && (
+          <div className="bg-white p-3 rounded-xl shadow-sm border border-gray-100">
+            <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
+              <Wallet size={14} /> Pilih Budget
+            </label>
+            <select
+              {...register('budget_id')}
+              className="w-full bg-transparent font-medium text-gray-900 focus:outline-none"
+            >
+              {budgets.map(b => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         {/* BIG AMOUNT INPUT */}
         <div className="relative">
           <span className="absolute left-4 top-1/2 -translate-y-1/2 text-2xl text-gray-400 font-bold">Rp</span>
@@ -239,7 +257,7 @@ export function ExpensesClient() {
         {/* SAVE BUTTON */}
         <button
           type="submit"
-          disabled={isLoading || !selectedCategory || !watch('amount')}
+          disabled={isLoading || !selectedCategory || !watch('amount') || !selectedBudget}
           className="w-full bg-primary-600 text-white font-bold text-lg py-4 rounded-xl shadow-md active:scale-95 transition-transform disabled:opacity-50 disabled:active:scale-100"
         >
           {isLoading ? 'Menyimpan...' : 'Simpan'}

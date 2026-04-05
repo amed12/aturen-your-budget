@@ -1,10 +1,16 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
+import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX, Settings } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import toast from 'react-hot-toast'
+
+type Budget = {
+  id: string
+  name: string
+  is_active: boolean
+}
 
 type SpendingAdvice = {
   safe_daily: number
@@ -34,40 +40,56 @@ type DashboardData = {
 }
 
 export function DashboardClient() {
+  const [budgets, setBudgets] = useState<Budget[]>([])
+  const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null)
   const [data, setData] = useState<DashboardData | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [needsBudget, setNeedsBudget] = useState(false)
   const [deleteId, setDeleteId] = useState<string | null>(null)
   const [isDeleting, setIsDeleting] = useState(false)
   
-  const fetchDashboard = async () => {
+  const fetchDashboard = useCallback(async (budgetIdToFetch?: string) => {
+    setIsLoading(true)
     try {
-      const now = new Date()
-      const month = now.getMonth() + 1
-      const year = now.getFullYear()
+      let currentBudgetId = budgetIdToFetch || selectedBudgetId
       
-      const budgetRes = await fetch(`/api/budgets?month=${month}&year=${year}`)
+      const budgetRes = await fetch(`/api/budgets/active`)
       const budgetJson = await budgetRes.json()
       
-      if (!budgetJson.budget) {
-        setNeedsBudget(true)
+      if (!budgetJson.budgets || budgetJson.budgets.length === 0) {
+        setBudgets([])
+        setData(null)
         setIsLoading(false)
         return
       }
 
-      const dashboardRes = await fetch(`/api/dashboard?budget_id=${budgetJson.budget.id}`)
-      const dashboardJson = await dashboardRes.json()
-      setData(dashboardJson)
+      setBudgets(budgetJson.budgets)
+      
+      if (!currentBudgetId || !budgetJson.budgets.find((b: any) => b.id === currentBudgetId)) {
+        currentBudgetId = budgetJson.budgets[0].id
+        setSelectedBudgetId(currentBudgetId)
+      }
+
+      if (currentBudgetId) {
+        const dashboardRes = await fetch(`/api/dashboard?budget_id=${currentBudgetId}`)
+        const dashboardJson = await dashboardRes.json()
+        setData(dashboardJson)
+      }
     } catch (error) {
       console.error('Failed to load dashboard', error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [selectedBudgetId])
 
   useEffect(() => {
     fetchDashboard()
-  }, [])
+  }, []) // Initial fetch
+
+  const handleBudgetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const id = e.target.value
+    setSelectedBudgetId(id)
+    fetchDashboard(id)
+  }
 
   const handleDeleteExpense = async () => {
     if (!deleteId) return
@@ -85,7 +107,7 @@ export function DashboardClient() {
     }
   }
 
-  if (isLoading) {
+  if (isLoading && !data) {
     return (
       <div className="p-6 space-y-8 animate-pulse">
         <header className="flex justify-between items-center">
@@ -128,7 +150,7 @@ export function DashboardClient() {
     )
   }
 
-  if (needsBudget) {
+  if (budgets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[75vh] p-6 space-y-8">
         <div className="text-center space-y-2">
@@ -141,7 +163,7 @@ export function DashboardClient() {
             <div className="bg-primary-100 text-primary-700 w-8 h-8 rounded-full flex items-center justify-center font-bold shrink-0">1</div>
             <div>
               <h3 className="font-semibold text-gray-900">Targetkan Budget</h3>
-              <p className="text-sm text-gray-500">Tentukan batas pengeluaran bulan ini agar uangmu tidak bablas.</p>
+              <p className="text-sm text-gray-500">Tentukan batas pengeluaran agar uangmu tidak bablas.</p>
             </div>
           </div>
           <div className="flex items-start gap-4 opacity-50">
@@ -164,7 +186,7 @@ export function DashboardClient() {
           href="/settings"
           className="w-full text-center bg-primary-600 text-white font-bold py-4 px-4 rounded-xl shadow-md active:scale-[0.98] transition-all"
         >
-          Mulai: Atur Budget
+          Mulai: Buat Budget Pertama
         </Link>
       </div>
     )
@@ -183,15 +205,29 @@ export function DashboardClient() {
   const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
 
   return (
-    <div className="p-6 space-y-8">
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-xl font-bold text-gray-900">Aturen</h1>
-          <p className="text-sm text-gray-500">{new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</p>
+    <div className="p-6 space-y-6 pb-24">
+      <header className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
+        <div className="flex-1 min-w-0 pr-2">
+          {budgets.length > 1 ? (
+            <select 
+              value={selectedBudgetId || ''} 
+              onChange={handleBudgetChange}
+              className="bg-transparent text-lg font-bold text-gray-900 hover:text-primary-600 focus:outline-none cursor-pointer w-full truncate border-none appearance-none"
+            >
+              {budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+            </select>
+          ) : (
+            <h1 className="text-lg font-bold text-gray-900 truncate pl-2">{budgets[0]?.name}</h1>
+          )}
         </div>
-        <Link href="/reports" className="p-2 bg-gray-100 text-gray-700 rounded-full active:scale-95 transition-transform">
-          <PieChart size={20} />
-        </Link>
+        <div className="flex shrink-0">
+          <Link href="/reports" className="p-2 text-gray-500 hover:text-primary-600 active:scale-95 transition-transform" title="Laporan">
+            <PieChart size={20} />
+          </Link>
+          <Link href="/settings" className="p-2 text-gray-500 hover:text-primary-600 active:scale-95 transition-transform" title="Pengaturan">
+            <Settings size={20} />
+          </Link>
+        </div>
       </header>
 
       {/* Low Budget Alert Banner */}
@@ -282,19 +318,22 @@ export function DashboardClient() {
                   ? '⚠️ Mendekati Batas Harian'
                   : '🚨 Budget Habis!'}
               </h3>
-              <p className={`text-xs ${
-                data.spending_advice.spending_status === 'safe' 
-                  ? 'text-emerald-600'
-                  : data.spending_advice.spending_status === 'warning'
-                  ? 'text-amber-600'
-                  : 'text-danger-600'
-              }`}>
-                {data.spending_advice.remaining_days} hari tersisa bulan ini
-              </p>
+              {data.spending_advice.remaining_days > 0 ? (
+                <p className={`text-xs ${
+                  data.spending_advice.spending_status === 'safe' 
+                    ? 'text-emerald-600'
+                    : data.spending_advice.spending_status === 'warning'
+                    ? 'text-amber-600'
+                    : 'text-danger-600'
+                }`}>
+                  {data.spending_advice.remaining_days} hari tersisa bulan ini
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500">Info budget di masa lalu</p>
+              )}
             </div>
           </div>
 
-          {/* Daily & Weekly Limit */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-white/70 rounded-xl p-3 space-y-1">
               <div className="flex items-center gap-1.5">
@@ -320,34 +359,6 @@ export function DashboardClient() {
             </div>
           </div>
 
-          {/* Today's Progress */}
-          <div className="bg-white/70 rounded-xl p-3 space-y-2">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-semibold text-gray-600">Hari ini sudah keluar</span>
-              <span className={`text-xs font-bold ${
-                data.spending_advice.today_spent > data.spending_advice.safe_daily 
-                  ? 'text-danger-600' 
-                  : 'text-emerald-600'
-              }`}>
-                {formatter.format(data.spending_advice.today_spent)} / {formatter.format(data.spending_advice.safe_daily)}
-              </span>
-            </div>
-            <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
-              <div 
-                className={`h-full transition-all duration-500 ease-out rounded-full ${
-                  data.spending_advice.safe_daily > 0 && data.spending_advice.today_spent / data.spending_advice.safe_daily > 1
-                    ? 'bg-danger-500'
-                    : data.spending_advice.safe_daily > 0 && data.spending_advice.today_spent / data.spending_advice.safe_daily > 0.7
-                    ? 'bg-amber-500'
-                    : 'bg-emerald-500'
-                }`}
-                style={{ 
-                  width: `${Math.min(100, data.spending_advice.safe_daily > 0 ? (data.spending_advice.today_spent / data.spending_advice.safe_daily) * 100 : 0)}%` 
-                }}
-              />
-            </div>
-          </div>
-
           {/* Avg Spending */}
           <div className="flex items-center gap-2 px-1">
             <TrendingUp size={13} className="text-gray-500" />
@@ -358,18 +369,6 @@ export function DashboardClient() {
               )}
             </p>
           </div>
-
-          {/* Tips */}
-          {data.spending_advice.spending_status !== 'danger' && (
-            <p className="text-[11px] text-gray-500 italic px-1">
-              💡 Tip: Usahakan pengeluaran harian di bawah {formatter.format(data.spending_advice.safe_daily)} agar budget aman sampai akhir bulan.
-            </p>
-          )}
-          {data.spending_advice.spending_status === 'danger' && (
-            <p className="text-[11px] text-danger-600 font-medium px-1">
-              ⛔ Budget bulan ini sudah habis. Pertimbangkan untuk menambah pemasukan atau kurangi pengeluaran.
-            </p>
-          )}
         </div>
       )}
 
@@ -423,7 +422,7 @@ export function DashboardClient() {
 
       {/* Quick Action */}
       <div className="pt-4">
-        <Link href="/expenses" className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white font-medium py-4 px-4 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
+        <Link href={`/expenses${selectedBudgetId ? '?budget_id=' + selectedBudgetId : ''}`} className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white font-medium py-4 px-4 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
           <PlusCircle size={20} />
           Catat Pengeluaran
         </Link>
