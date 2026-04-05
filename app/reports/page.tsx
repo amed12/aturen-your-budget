@@ -65,6 +65,18 @@ export default function ReportsPage() {
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date')
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   
+  // Per-month state
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1)
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear())
+  
+  const months = [
+    { value: 1, label: 'Januari' }, { value: 2, label: 'Februari' }, { value: 3, label: 'Maret' },
+    { value: 4, label: 'April' }, { value: 5, label: 'Mei' }, { value: 6, label: 'Juni' },
+    { value: 7, label: 'Juli' }, { value: 8, label: 'Agustus' }, { value: 9, label: 'September' },
+    { value: 10, label: 'Oktober' }, { value: 11, label: 'November' }, { value: 12, label: 'Desember' }
+  ]
+  const years = Array.from({ length: 5 }, (_, i) => new Date().getFullYear() - i)
+  
   // Categories for filter
   const [categories, setCategories] = useState<CategoryOption[]>([])
   
@@ -74,16 +86,17 @@ export default function ReportsPage() {
 
   const formatter = new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 })
 
-  // Fetch budget
+  // Fetch budget & Initial summary
   useEffect(() => {
     async function init() {
+      setIsLoading(true)
+      setBudgetId(null)
+      setSummaryData(null)
+      setDetailData(null)
+
       try {
-        const now = new Date()
-        const month = now.getMonth() + 1
-        const year = now.getFullYear()
-        
         const [budgetRes, catRes] = await Promise.all([
-          fetch(`/api/budgets?month=${month}&year=${year}`),
+          fetch(`/api/budgets?month=${selectedMonth}&year=${selectedYear}`),
           fetch('/api/categories')
         ])
         const budgetJson = await budgetRes.json()
@@ -109,7 +122,7 @@ export default function ReportsPage() {
       }
     }
     init()
-  }, [])
+  }, [selectedMonth, selectedYear])
 
   // Fetch detail data
   const fetchDetail = useCallback(async () => {
@@ -180,7 +193,22 @@ export default function ReportsPage() {
             </button>
             <div className="flex-1">
               <h1 className="text-xl font-bold text-gray-900">Laporan Pengeluaran</h1>
-              <p className="text-sm text-gray-500">{new Date().toLocaleDateString('id-ID', { month: 'long', year: 'numeric' })}</p>
+              <div className="flex gap-2 mt-0.5">
+                <select 
+                  value={selectedMonth} 
+                  onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                  className="bg-transparent text-xs font-semibold text-gray-500 hover:text-primary-600 focus:outline-none cursor-pointer"
+                >
+                  {months.map(m => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </select>
+                <select 
+                  value={selectedYear} 
+                  onChange={(e) => setSelectedYear(Number(e.target.value))}
+                  className="bg-transparent text-xs font-semibold text-gray-500 hover:text-primary-600 focus:outline-none cursor-pointer"
+                >
+                  {years.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
+              </div>
             </div>
             {budgetId && (
               <a 
