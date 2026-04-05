@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { PieChart, Download, ArrowLeft, ArrowUpRight, ArrowDownRight, Calendar, Search, AlertCircle } from 'lucide-react'
 import Link from 'next/link'
@@ -41,7 +41,7 @@ type DetailData = {
   expenses: Expense[]
 }
 
-export default function ReportsPage() {
+function ReportsContent() {
   const router = useRouter()
   const searchParams = useSearchParams()
   
@@ -398,5 +398,13 @@ export default function ReportsPage() {
         </div>
       ) : null}
     </div>
+  )
+}
+
+export default function ReportsPage() {
+  return (
+    <Suspense fallback={<div className="p-6 text-center text-gray-500">Memuat laporan...</div>}>
+      <ReportsContent />
+    </Suspense>
   )
 }

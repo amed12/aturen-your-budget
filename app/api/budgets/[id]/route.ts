@@ -51,7 +51,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return apiSuccess({ budget: updatedBudget })
   } catch (error: any) {
     if (error.message === 'UNAUTHORIZED') return apiError('Unauthorized', 401)
-    if (error instanceof z.ZodError) return apiError(error.errors[0].message, 400)
+    if (error instanceof z.ZodError) return apiError(error.issues[0].message, 400)
     return apiError('Failed to update budget', 500)
   }
 }
