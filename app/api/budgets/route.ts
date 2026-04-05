@@ -19,14 +19,21 @@ export async function POST(request: Request) {
     const body = await request.json()
     const { month, year, total_amount, add_amount, source } = budgetSchema.parse(body)
 
-    let budget = await prisma.budget.findUnique({
+    let budget;
+    // We check if budget with the same ID exists when the client sends it, 
+    // but the schema doesn't uniquely enforce month/day for budgets anymore.
+    // However, if the client is just "adding amount", they may want to target an active budget for this month.
+    // For now we will just create a new one unless 'total_amount' is updated and they didn't pass ID... wait, the client is expected to pass budget ID if they want to add!
+    // But keeping it simple for the MVP behavior: If they give month/year but we are moving away from unique constraint, let's see if there is an active budget for that month.
+    
+    budget = await prisma.budget.findFirst({
       where: {
-        user_id_month_year: {
-          user_id: session.user_id as string,
-          month,
-          year,
-        }
-      }
+        user_id: session.user_id as string,
+        month,
+        year,
+        is_active: true
+      },
+      orderBy: { created_at: 'desc' }
     })
 
     if (budget) {
@@ -48,16 +55,19 @@ export async function POST(request: Request) {
           where: { id: budget.id },
           data: { total_amount }
         })
-        // Log setup as income if we want to reset history, or just leave it. 
-        // For now, let's treat explicit total_amount changes not as an income stream but a budget reset.
       }
     } else {
       const newTotal = add_amount !== undefined ? add_amount : total_amount
+      
+      const budgetName = `Budget ${new Date(year, month - 1).toLocaleString('id-ID', { month: 'long' })} ${year}`
+      
       budget = await prisma.budget.create({
         data: {
           user_id: session.user_id as string,
           month,
           year,
+          name: budgetName,
+          is_active: true,
           total_amount: newTotal!
         }
       })
@@ -83,18 +93,27 @@ export async function GET(request: Request) {
     const session = await requireAuth()
 
     const { searchParams } = new URL(request.url)
+    const listAll = searchParams.get('list') === 'all'
+    if (listAll) {
+      const budgets = await prisma.budget.findMany({
+        where: { user_id: session.user_id as string },
+        orderBy: { created_at: 'desc' }
+      })
+      return apiSuccess({ budgets })
+    }
+
     const month = parseInt(searchParams.get('month') || '0')
     const year = parseInt(searchParams.get('year') || '0')
-    
     if (!month || !year) return apiError('Month and year required', 400)
-    const budget = await prisma.budget.findUnique({
+    
+    // We get the first active budget for that month if they search this way (fallback for old API calls)
+    const budget = await prisma.budget.findFirst({
       where: {
-        user_id_month_year: {
-          user_id: session.user_id as string,
-          month,
-          year,
-        }
+        user_id: session.user_id as string,
+        month,
+        year,
       },
+      orderBy: { created_at: 'desc' },
       include: {
         incomes: {
           orderBy: { created_at: 'desc' }

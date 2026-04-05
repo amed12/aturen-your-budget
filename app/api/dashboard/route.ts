@@ -62,36 +62,62 @@ export async function GET(request: Request) {
 
     // === Spending Advice Calculation ===
     const now = new Date()
+    
+    // Check if the budget is for the current month
+    const isCurrentMonthBudget = budget.year === now.getFullYear() && budget.month === now.getMonth() + 1
+    
+    // If not current month, remaining days is relative to that old month (0 if past, something if future, but just simpler: 0 for anything not current month)
     const currentDay = now.getDate()
-    const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
-    const remainingDays = Math.max(1, daysInMonth - currentDay + 1) // include today
+    
+    let remainingDays = 0;
+    if (isCurrentMonthBudget) {
+      const daysInMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()
+      remainingDays = Math.max(1, daysInMonth - currentDay + 1) // include today
+    } else {
+      // If past month, there are no remaining days.
+      remainingDays = 0;
+    }
 
-    const safeDaily = remaining > 0 ? Math.floor(remaining / remainingDays) : 0
-    const safeWeekly = remaining > 0 ? Math.floor(remaining / Math.max(1, remainingDays / 7)) : 0
+    const safeDaily = remainingDays > 0 && remaining > 0 ? Math.floor(remaining / remainingDays) : 0
+    const safeWeekly = remainingDays > 0 && remaining > 0 ? Math.floor(remaining / Math.max(1, remainingDays / 7)) : 0
 
-    // Calculate today's spending
+    // Calculate today's spending (only relevant if it is the current month)
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate())
     const todayEnd = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1)
-    const todaySpent = expenses
-      .filter(exp => {
-        const expDate = new Date(exp.date)
-        return expDate >= todayStart && expDate < todayEnd
-      })
-      .reduce((acc, exp) => acc + Number(exp.amount), 0)
+    
+    let todaySpent = 0;
+    if (isCurrentMonthBudget) {
+      todaySpent = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date)
+          return expDate >= todayStart && expDate < todayEnd
+        })
+        .reduce((acc, exp) => acc + Number(exp.amount), 0)
+    }
 
     // This week's spending (Monday start)
-    const dayOfWeek = now.getDay() || 7 // Convert Sunday(0) to 7
-    const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1)
-    const thisWeekSpent = expenses
-      .filter(exp => {
-        const expDate = new Date(exp.date)
-        return expDate >= weekStart && expDate <= now
-      })
-      .reduce((acc, exp) => acc + Number(exp.amount), 0)
+    let thisWeekSpent = 0;
+    if (isCurrentMonthBudget) {
+      const dayOfWeek = now.getDay() || 7 // Convert Sunday(0) to 7
+      const weekStart = new Date(now.getFullYear(), now.getMonth(), now.getDate() - dayOfWeek + 1)
+      thisWeekSpent = expenses
+        .filter(exp => {
+          const expDate = new Date(exp.date)
+          return expDate >= weekStart && expDate <= now
+        })
+        .reduce((acc, exp) => acc + Number(exp.amount), 0)
+    }
 
     // Average daily spending this month
-    const daysElapsed = Math.max(1, currentDay - 1) // days before today
-    const avgDailySpent = daysElapsed > 0 ? Math.round(spent / daysElapsed) : 0
+    // If it's a past budget, calculate average over the whole month
+    let avgDailySpent = 0;
+    if (isCurrentMonthBudget) {
+      const daysElapsed = Math.max(1, currentDay - 1) // days before today
+      avgDailySpent = daysElapsed > 0 ? Math.round(spent / daysElapsed) : 0
+    } else {
+      const daysInThatMonth = new Date(budget.year, budget.month, 0).getDate()
+      avgDailySpent = Math.round(spent / daysInThatMonth)
+    }
 
     // Spending status
     let spending_status: 'safe' | 'warning' | 'danger' = 'safe'
