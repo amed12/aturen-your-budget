@@ -163,14 +163,13 @@ export default function SettingsPage() {
       const targetBudget = budgets.find(b => b.id === data.budget_id)
       if (!targetBudget) throw new Error('Target budget not found')
       
-      const res = await fetch('/api/budgets', {
+      const res = await fetch('/api/incomes', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-          add_amount: rawAmount, 
+          amount: rawAmount, 
           source: data.source, 
-          month: targetBudget.month, 
-          year: targetBudget.year 
+          budget_id: data.budget_id 
         })
       })
       
