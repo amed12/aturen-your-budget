@@ -61,6 +61,8 @@ function ReportsContent() {
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('')
+  const [selectedCategoryName, setSelectedCategoryName] = useState<string>('')
 
   const [hasLoadedBudgets, setHasLoadedBudgets] = useState(false)
 
@@ -114,6 +116,7 @@ function ReportsContent() {
         if (search) queryParams.set('search', search)
         if (dateFrom) queryParams.set('date_from', dateFrom)
         if (dateTo) queryParams.set('date_to', dateTo)
+        if (selectedCategoryId) queryParams.set('category_id', selectedCategoryId)
         
         const res = await fetch(`/api/reports?${queryParams.toString()}`)
         const json = await res.json()
@@ -124,7 +127,7 @@ function ReportsContent() {
     } finally {
       setIsLoading(false)
     }
-  }, [selectedBudget, activeTab, search, sortBy, sortOrder, dateFrom, dateTo, hasLoadedBudgets])
+  }, [selectedBudget, activeTab, search, sortBy, sortOrder, dateFrom, dateTo, hasLoadedBudgets, selectedCategoryId])
 
   useEffect(() => {
     fetchReport()
@@ -284,11 +287,19 @@ function ReportsContent() {
             </h2>
             
             <div className="space-y-5">
-              {summaryData.breakdown.length > 0 ? summaryData.breakdown.map(cat => (
-                <div key={cat.name} className="space-y-2">
+              {summaryData.breakdown.length > 0 ? summaryData.breakdown.map((cat: any) => (
+                <div 
+                  key={cat.name} 
+                  className="space-y-2 cursor-pointer active:scale-[0.98] transition-transform group"
+                  onClick={() => {
+                    setSelectedCategoryId(cat.id)
+                    setSelectedCategoryName(cat.name)
+                    setActiveTab('detail')
+                  }}
+                >
                   <div className="flex justify-between items-end">
                     <div>
-                       <span className="font-semibold text-gray-900 text-sm">{cat.name}</span>
+                       <span className="font-semibold text-gray-900 text-sm group-hover:text-primary-600 transition-colors uppercase tracking-tight">{cat.name}</span>
                        <span className="text-xs text-gray-400 ml-2">{cat.count} trx</span>
                     </div>
                     <span className="font-bold text-gray-900 text-sm">{formatter.format(cat.amount)}</span>
@@ -345,8 +356,26 @@ function ReportsContent() {
              <div className="flex gap-2 overflow-x-auto pb-1 hide-scrollbar">
                 <button onClick={() => setQuickDate(7)} className="shrink-0 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium active:scale-95 transition-transform">7 Hari</button>
                 <button onClick={() => setQuickDate(30)} className="shrink-0 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium active:scale-95 transition-transform">30 Hari</button>
-                <button onClick={() => {setDateFrom(''); setDateTo('')}} className="shrink-0 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium active:scale-95 transition-transform">Reset Filter</button>
+                <button 
+                  onClick={() => {
+                    setDateFrom('')
+                    setDateTo('')
+                    setSearch('')
+                    setSelectedCategoryId('')
+                    setSelectedCategoryName('')
+                  }} 
+                  className="shrink-0 px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-medium active:scale-95 transition-transform"
+                >
+                  Reset Filter
+                </button>
              </div>
+             
+             {selectedCategoryName && (
+               <div className="flex items-center justify-between bg-primary-50 px-3 py-2 rounded-lg border border-primary-100">
+                  <span className="text-[11px] font-bold text-primary-700">Filter Kategori: {selectedCategoryName}</span>
+                  <button onClick={() => { setSelectedCategoryId(''); setSelectedCategoryName('') }} className="text-primary-600 text-xs font-bold hover:underline">Hapus</button>
+               </div>
+             )}
           </div>
 
           {/* Results Summary */}

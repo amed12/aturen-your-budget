@@ -80,15 +80,16 @@ export async function GET(request: Request) {
 
       const total_spent = expenses.reduce((sum, exp) => sum + Number(exp.amount), 0)
 
-      const categoryMap: Record<string, { amount: number, count: number }> = {}
+      const categoryMap: Record<string, { amount: number, count: number, id: string }> = {}
       
       // Calculate daily stats
       const dailyMap: Record<string, number> = {}
       
       expenses.forEach((exp) => {
         const catName = exp.category.name
+        const catId = exp.category.id
         const amount = Number(exp.amount)
-        if (!categoryMap[catName]) categoryMap[catName] = { amount: 0, count: 0 }
+        if (!categoryMap[catName]) categoryMap[catName] = { amount: 0, count: 0, id: catId }
         categoryMap[catName].amount += amount
         categoryMap[catName].count += 1
         
@@ -99,6 +100,7 @@ export async function GET(request: Request) {
       const breakdown = Object.entries(categoryMap)
         .map(([name, data]) => ({
           name,
+          id: data.id,
           amount: data.amount,
           count: data.count,
           avg: data.count > 0 ? Math.round(data.amount / data.count) : 0,
