@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
-import { X, Plus, Wallet } from 'lucide-react'
+import { X, Plus, Wallet, ChevronDown } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 type Category = { id: string, name: string }
@@ -178,14 +178,19 @@ export function ExpensesClient() {
             <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1">
               <Wallet size={14} /> Pilih Budget
             </label>
-            <select
-              {...register('budget_id')}
-              className="w-full bg-transparent font-medium text-gray-900 focus:outline-none"
-            >
-              {budgets.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
+            <div className="relative group">
+              <select
+                {...register('budget_id')}
+                className="w-full bg-gray-50 text-base font-bold text-gray-900 focus:outline-none cursor-pointer px-3 py-3 rounded-xl border border-gray-100 appearance-none transition-colors group-hover:border-primary-200 relative z-10"
+              >
+                {budgets.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </select>
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-primary-600 transition-colors z-20">
+                <ChevronDown size={20} />
+              </div>
+            </div>
           </div>
         )}
 

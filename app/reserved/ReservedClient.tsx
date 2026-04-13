@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import toast from 'react-hot-toast'
-import { CheckCircle2, Circle, AlertCircle, Plus, Trash2, Edit2, Wallet } from 'lucide-react'
+import { CheckCircle2, Circle, AlertCircle, Plus, Trash2, Edit2, Wallet, ChevronDown } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 type ReservedItem = {
@@ -201,18 +201,23 @@ export function ReservedClient() {
       <header className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100 mb-2">
         <div className="flex-1 min-w-0 pr-2">
           {budgets.length > 1 ? (
-             <div className="flex items-center gap-2 pl-2 text-gray-400">
-             <Wallet size={16} className="shrink-0" />
+             <div className="relative inline-flex items-center max-w-[200px] w-full bg-gray-50 hover:bg-gray-100 rounded-lg pr-8 transition-colors border border-gray-100 group">
+             <div className="absolute pl-2 text-gray-400 pointer-events-none z-10">
+               <Wallet size={16} className="shrink-0" />
+             </div>
              <select 
                value={selectedBudgetId || ''} 
                onChange={handleBudgetChange}
-               className="bg-transparent text-sm font-bold text-gray-900 hover:text-primary-600 focus:outline-none cursor-pointer w-full truncate border-none appearance-none"
+               className="bg-transparent text-sm font-bold text-gray-900 hover:text-primary-600 focus:outline-none cursor-pointer w-full py-2 pl-8 truncate border-none appearance-none relative z-10"
              >
                {budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
              </select>
+             <div className="absolute right-2 pointer-events-none text-gray-400 group-hover:text-primary-600 z-10">
+                <ChevronDown size={16} />
+             </div>
            </div>
           ) : (
-            <div className="flex items-center gap-2 pl-2 text-gray-400">
+            <div className="flex items-center gap-2 pl-3 pr-3 py-2 bg-gray-50 rounded-lg border border-gray-100 text-gray-400 w-fit">
                <Wallet size={16} className="shrink-0" />
                <h1 className="text-sm font-bold text-gray-900 truncate">{budgets[0]?.name}</h1>
             </div>

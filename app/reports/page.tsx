@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { PieChart, Download, ArrowLeft, ArrowUpRight, ArrowDownRight, Calendar, Search, AlertCircle } from 'lucide-react'
+import { PieChart, Download, ArrowLeft, ArrowUpRight, ArrowDownRight, Calendar, Search, AlertCircle, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
 
 type Budget = { id: string, name: string }
@@ -177,27 +177,32 @@ function ReportsContent() {
         <label className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2 flex items-center gap-1 pl-1">
           Pilih Budget
         </label>
-        <select
-          value={selectedBudget}
-          onChange={(e) => setSelectedBudget(e.target.value)}
-          className="w-full bg-gray-50 text-base font-bold text-gray-900 px-3 py-3 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer appearance-none"
-        >
-          <option value="all">Semua Budget (Gabungan)</option>
-          {activeBudgets.length > 0 && (
-            <optgroup label="Budget Aktif">
-              {activeBudgets.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </optgroup>
-          )}
-          {archivedBudgets.length > 0 && (
-            <optgroup label="Budget Diarsipkan">
-              {archivedBudgets.map(b => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </optgroup>
-          )}
-        </select>
+        <div className="relative group">
+          <select
+            value={selectedBudget}
+            onChange={(e) => setSelectedBudget(e.target.value)}
+            className="w-full bg-gray-50 text-base font-bold text-gray-900 px-3 py-3 rounded-xl border border-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 cursor-pointer appearance-none transition-colors group-hover:border-primary-200 relative z-10"
+          >
+            <option value="all">Semua Budget (Gabungan)</option>
+            {activeBudgets.length > 0 && (
+              <optgroup label="Budget Aktif">
+                {activeBudgets.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </optgroup>
+            )}
+            {archivedBudgets.length > 0 && (
+              <optgroup label="Budget Diarsipkan">
+                {archivedBudgets.map(b => (
+                  <option key={b.id} value={b.id}>{b.name}</option>
+                ))}
+              </optgroup>
+            )}
+          </select>
+          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-gray-400 group-hover:text-primary-600 transition-colors z-20">
+            <ChevronDown size={20} />
+          </div>
+        </div>
       </div>
 
       {/* Tabs */}

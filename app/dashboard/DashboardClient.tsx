@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX, Settings } from 'lucide-react'
+import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX, Settings, ChevronDown } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import toast from 'react-hot-toast'
 
@@ -210,15 +210,22 @@ export function DashboardClient() {
       <header className="flex justify-between items-center bg-white p-2 rounded-2xl shadow-sm border border-gray-100">
         <div className="flex-1 min-w-0 pr-2">
           {budgets.length > 1 ? (
-            <select 
-              value={selectedBudgetId || ''} 
-              onChange={handleBudgetChange}
-              className="bg-transparent text-lg font-bold text-gray-900 hover:text-primary-600 focus:outline-none cursor-pointer w-full truncate border-none appearance-none"
-            >
-              {budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
+             <div className="relative inline-flex items-center w-full max-w-[200px] bg-gray-50 hover:bg-gray-100 rounded-lg pr-8 transition-colors border border-gray-100 group">
+              <select 
+                value={selectedBudgetId || ''} 
+                onChange={handleBudgetChange}
+                className="bg-transparent text-lg font-bold text-gray-900 focus:outline-none cursor-pointer w-full py-1.5 pl-3 truncate border-none appearance-none relative z-10"
+              >
+                {budgets.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
+              </select>
+              <div className="absolute right-2 pointer-events-none text-gray-400 group-hover:text-primary-600 z-10">
+                <ChevronDown size={18} />
+              </div>
+            </div>
           ) : (
-            <h1 className="text-lg font-bold text-gray-900 truncate pl-2">{budgets[0]?.name}</h1>
+            <div className="bg-gray-50 rounded-lg px-3 py-1.5 border border-gray-100 inline-block w-full max-w-[200px]">
+              <h1 className="text-lg font-bold text-gray-900 truncate">{budgets[0]?.name}</h1>
+            </div>
           )}
         </div>
         <div className="flex shrink-0">
