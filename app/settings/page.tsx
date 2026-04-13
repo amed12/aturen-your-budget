@@ -6,7 +6,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import toast from 'react-hot-toast'
-import { LogOut, Save, Plus, Edit2, Archive, ArchiveRestore, Trash2, History, Wallet } from 'lucide-react'
+import { LogOut, Save, Plus, Edit2, Archive, ArchiveRestore, Trash2, History, Wallet, Star } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 
 const budgetSchema = z.object({
@@ -37,6 +37,7 @@ type Budget = {
   name: string
   total_amount: string
   is_active: boolean
+  is_primary: boolean
   month: number
   year: number
   created_at: string
@@ -105,7 +106,7 @@ export default function SettingsPage() {
       if (json.budgets) {
         setBudgets(json.budgets)
         
-        const activeBudget = json.budgets.find((b: Budget) => b.is_active)
+        const activeBudget = json.budgets.find((b: Budget) => b.is_primary) || json.budgets.find((b: Budget) => b.is_active)
         if (activeBudget && !selectedBudgetId) { // Only set if not already set or if initially loading
           resetAdd({ budget_id: activeBudget.id, source: '', add_amount: '' })
           fetchIncomes(activeBudget.id)
@@ -221,6 +222,23 @@ export default function SettingsPage() {
     } finally {
       setRenameId(null)
       setRenameName('')
+    }
+  }
+
+  const handleSetPrimary = async (id: string) => {
+    try {
+      const res = await fetch(`/api/budgets/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ is_primary: true })
+      })
+      if (!res.ok) throw new Error()
+      
+      toast.success('Kantong ditetapkan sebagai Utama')
+      fetchBudgets()
+      router.refresh()
+    } catch {
+      toast.error('Gagal menetapkan kantong utama')
     }
   }
 
@@ -380,20 +398,31 @@ export default function SettingsPage() {
           ) : (
             activeBudgets.map(b => (
               <div key={b.id} className="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                 <div className="flex justify-between items-start mb-2">
+                  <div className="flex justify-between items-start mb-2">
                    <div>
                      <h4 className="font-bold text-gray-900 flex items-center gap-2">
                        {b.name}
+                       {b.is_primary && <Star size={14} className="fill-amber-400 text-amber-400" />}
                        <button onClick={() => { setRenameId(b.id); setRenameName(b.name); }} className="text-gray-400 hover:text-primary-600"><Edit2 size={14} /></button>
                      </h4>
                      <p className="text-sm font-medium text-primary-600">{formatter.format(Number(b.total_amount))}</p>
                    </div>
-                   <button 
-                     onClick={() => handleToggleActive(b.id, b.is_active)}
-                     className="text-gray-500 bg-white p-2 rounded-lg border shadow-sm flex items-center gap-1 text-xs font-semibold hover:bg-gray-50"
-                   >
-                     <Archive size={14} /> Arsipkan
-                   </button>
+                   <div className="flex gap-2">
+                     {!b.is_primary && (
+                       <button 
+                         onClick={() => handleSetPrimary(b.id)}
+                         className="text-gray-500 bg-white p-2 rounded-lg border shadow-sm flex items-center gap-1 text-xs font-semibold hover:bg-gray-50"
+                       >
+                         <Star size={14} /> Utama
+                       </button>
+                     )}
+                     <button 
+                       onClick={() => handleToggleActive(b.id, b.is_active)}
+                       className="text-gray-500 bg-white p-2 rounded-lg border shadow-sm flex items-center gap-1 text-xs font-semibold hover:bg-gray-50"
+                     >
+                       <Archive size={14} /> Arsipkan
+                     </button>
+                   </div>
                  </div>
               </div>
             ))

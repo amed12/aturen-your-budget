@@ -80,9 +80,10 @@ function ReportsContent() {
           if (bParam && bJson.budgets.find((b:any) => b.id === bParam)) {
             setSelectedBudget(bParam)
           } else if (bJson.budgets.length > 0) {
-             // By default, select the first active budget if exists, else 'all'
+             // By default, select primary budget first, then first active budget if exists, else 'all'
+             const primary = bJson.budgets.find((b: any) => b.is_primary)
              const firstActive = bJson.budgets.find((b: any) => b.is_active)
-             setSelectedBudget(firstActive ? firstActive.id : 'all')
+             setSelectedBudget(primary ? primary.id : (firstActive ? firstActive.id : 'all'))
           } else {
              setSelectedBudget('all')
           }

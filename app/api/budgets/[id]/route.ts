@@ -6,6 +6,7 @@ import { z } from 'zod'
 const updateSchema = z.object({
   name: z.string().optional(),
   is_active: z.boolean().optional(),
+  is_primary: z.boolean().optional(),
 })
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -41,6 +42,14 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
 
     if (!existingBudget || existingBudget.user_id !== session.user_id) {
       return apiError('Not found', 404)
+    }
+
+    if (dataToUpdate.is_primary === true) {
+      // Unset all other budgets for this user
+      await prisma.budget.updateMany({
+        where: { user_id: session.user_id as string },
+        data: { is_primary: false }
+      })
     }
 
     const updatedBudget = await prisma.budget.update({

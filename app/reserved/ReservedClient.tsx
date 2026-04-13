@@ -60,7 +60,8 @@ export function ReservedClient() {
       }
 
       setBudgets(budgetJson.budgets)
-      setSelectedBudgetId(budgetJson.budgets[0].id)
+      const primary = budgetJson.budgets.find((b: any) => b.is_primary)
+      setSelectedBudgetId(primary ? primary.id : budgetJson.budgets[0].id)
     } catch {
       toast.error('Gagal memuat budget')
       setIsLoading(false)

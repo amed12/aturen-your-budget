@@ -65,7 +65,8 @@ export function DashboardClient() {
       setBudgets(budgetJson.budgets)
       
       if (!currentBudgetId || !budgetJson.budgets.find((b: any) => b.id === currentBudgetId)) {
-        currentBudgetId = budgetJson.budgets[0].id
+        const primary = budgetJson.budgets.find((b: any) => b.is_primary)
+        currentBudgetId = primary ? primary.id : budgetJson.budgets[0].id
         setSelectedBudgetId(currentBudgetId)
       }
 

@@ -47,7 +47,8 @@ export function ExpensesClient() {
           if (bId && budgetJson.budgets.find((b: any) => b.id === bId)) {
             setValue('budget_id', bId)
           } else if (budgetJson.budgets.length > 0) {
-            setValue('budget_id', budgetJson.budgets[0].id)
+            const primary = budgetJson.budgets.find((b: any) => b.is_primary)
+            setValue('budget_id', primary ? primary.id : budgetJson.budgets[0].id)
           }
         }
         
