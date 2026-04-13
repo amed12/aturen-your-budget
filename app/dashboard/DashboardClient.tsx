@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import Link from 'next/link'
-import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX, Settings, ChevronDown } from 'lucide-react'
+import { PlusCircle, Trash2, Edit2, PieChart, AlertTriangle, Wallet, TrendingUp, CalendarDays, ShieldCheck, ShieldAlert, ShieldX, Settings, ChevronDown, ArrowRight } from 'lucide-react'
 import { Modal } from '@/components/Modal'
 import toast from 'react-hot-toast'
 
@@ -439,9 +439,9 @@ export function DashboardClient() {
 
       {/* Quick Action */}
       <div className="pt-4">
-        <Link href={`/expenses${selectedBudgetId ? '?budget_id=' + selectedBudgetId : ''}`} className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white font-medium py-4 px-4 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
-          <PlusCircle size={20} />
-          Catat Pengeluaran
+        <Link href={`/reports${selectedBudgetId ? '?budget_id=' + selectedBudgetId : ''}`} className="flex items-center justify-center gap-2 w-full bg-gray-900 text-white font-medium py-4 px-4 rounded-xl shadow-sm active:scale-[0.98] transition-transform">
+          Lihat Detail
+          <ArrowRight size={20} />
         </Link>
       </div>
 
