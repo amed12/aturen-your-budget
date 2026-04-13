@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
-import { PieChart, Download, ArrowLeft, ArrowUpRight, ArrowDownRight, Calendar, Search, AlertCircle, ChevronDown } from 'lucide-react'
+import { PieChart, Download, ArrowLeft, ArrowUpRight, ArrowDownRight, Calendar, Search, AlertCircle, ChevronDown, Edit2, Trash2 } from 'lucide-react'
 import Link from 'next/link'
+import { Modal } from '@/components/Modal'
+import toast from 'react-hot-toast'
 
 type Budget = { id: string, name: string }
 
@@ -58,6 +60,9 @@ function ReportsContent() {
   // Filters for Detail
   const [search, setSearch] = useState('')
   const [sortBy, setSortBy] = useState<'date' | 'amount'>('date')
+
+  const [deleteId, setDeleteId] = useState<string | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [sortOrder, setSortOrder] = useState<'desc' | 'asc'>('desc')
   const [dateFrom, setDateFrom] = useState('')
   const [dateTo, setDateTo] = useState('')
@@ -151,6 +156,22 @@ function ReportsContent() {
     start.setDate(end.getDate() - days)
     setDateTo(end.toISOString().split('T')[0])
     setDateFrom(start.toISOString().split('T')[0])
+  }
+
+  const handleDeleteExpense = async () => {
+    if (!deleteId) return
+    setIsDeleting(true)
+    try {
+      const res = await fetch(`/api/expenses/${deleteId}`, { method: 'DELETE' })
+      if (!res.ok) throw new Error()
+      toast.success('Pengeluaran dihapus')
+      setDeleteId(null)
+      fetchReport() // refresh data
+    } catch (e) {
+      toast.error('Gagal menghapus pengeluaran')
+    } finally {
+      setIsDeleting(false)
+    }
   }
 
   const exportCSV = () => {
@@ -432,7 +453,17 @@ function ReportsContent() {
                            {new Date(exp.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}
                         </span>
                      </div>
-                     <span className="font-bold text-gray-900">{formatter.format(exp.amount)}</span>
+                     <div className="flex flex-col items-end gap-1.5">
+                       <span className="font-bold text-gray-900">{formatter.format(exp.amount)}</span>
+                       <div className="flex items-center gap-3">
+                         <Link href={`/expenses?edit_id=${exp.id}`} className="text-gray-400 hover:text-primary-600 active:scale-95 transition-transform" title="Edit">
+                           <Edit2 size={14} />
+                         </Link>
+                         <button onClick={() => setDeleteId(exp.id)} className="text-gray-400 hover:text-danger-600 active:scale-95 transition-transform" title="Hapus">
+                           <Trash2 size={14} />
+                         </button>
+                       </div>
+                     </div>
                   </div>
                </div>
              )) : (
@@ -443,6 +474,28 @@ function ReportsContent() {
           </div>
         </div>
       ) : null}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={!!deleteId} onClose={() => setDeleteId(null)} title="Hapus Pengeluaran">
+        <div className="space-y-4">
+          <p className="text-sm text-gray-600">Apakah Anda yakin ingin menghapus catatan pengeluaran ini?</p>
+          <div className="flex gap-2">
+            <button 
+              onClick={() => setDeleteId(null)} 
+              className="flex-1 py-3 text-gray-700 font-medium bg-gray-100 rounded-lg active:scale-[0.98] transition-transform"
+            >
+              Batal
+            </button>
+            <button 
+              onClick={handleDeleteExpense} 
+              disabled={isDeleting}
+              className="flex-1 py-3 text-white font-medium bg-danger-600 rounded-lg disabled:opacity-50 flex items-center justify-center gap-2 active:scale-[0.98] transition-transform"
+            >
+              {isDeleting ? 'Menghapus...' : 'Hapus'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   )
 }
