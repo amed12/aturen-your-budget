@@ -23,7 +23,7 @@ export async function POST(request: Request) {
 
     const budgetName = body.name || `Budget ${new Date(year, month - 1).toLocaleString('id-ID', { month: 'long' })} ${year}`
     
-    budget = await prisma.budget.create({
+    const budget = await prisma.budget.create({
       data: {
         user_id: session.user_id as string,
         month,
