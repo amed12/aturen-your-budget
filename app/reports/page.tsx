@@ -80,10 +80,15 @@ function ReportsContent() {
           if (bParam && bJson.budgets.find((b:any) => b.id === bParam)) {
             setSelectedBudget(bParam)
           } else if (bJson.budgets.length > 0) {
-             // By default, select primary budget first, then first active budget if exists, else 'all'
+             const savedId = typeof window !== 'undefined' ? localStorage.getItem('last_selected_budget_id') : null
              const primary = bJson.budgets.find((b: any) => b.is_primary)
              const firstActive = bJson.budgets.find((b: any) => b.is_active)
-             setSelectedBudget(primary ? primary.id : (firstActive ? firstActive.id : 'all'))
+             
+             if (savedId && bJson.budgets.find((b:any) => b.id === savedId)) {
+               setSelectedBudget(savedId)
+             } else {
+               setSelectedBudget(primary ? primary.id : (firstActive ? firstActive.id : 'all'))
+             }
           } else {
              setSelectedBudget('all')
           }
@@ -96,6 +101,12 @@ function ReportsContent() {
     }
     init()
   }, [searchParams])
+
+  useEffect(() => {
+    if (selectedBudget && selectedBudget !== 'all' && typeof window !== 'undefined') {
+      localStorage.setItem('last_selected_budget_id', selectedBudget)
+    }
+  }, [selectedBudget])
 
   // 2. Fetch Report Data whenever dependencies change
   const fetchReport = useCallback(async () => {

@@ -32,6 +32,12 @@ export function ExpensesClient() {
   const selectedBudget = watch('budget_id')
 
   useEffect(() => {
+    if (selectedBudget && typeof window !== 'undefined') {
+      localStorage.setItem('last_selected_budget_id', selectedBudget)
+    }
+  }, [selectedBudget])
+
+  useEffect(() => {
     async function init() {
       try {
         const params = new URLSearchParams(window.location.search)
@@ -47,8 +53,14 @@ export function ExpensesClient() {
           if (bId && budgetJson.budgets.find((b: any) => b.id === bId)) {
             setValue('budget_id', bId)
           } else if (budgetJson.budgets.length > 0) {
+            const savedId = typeof window !== 'undefined' ? localStorage.getItem('last_selected_budget_id') : null
             const primary = budgetJson.budgets.find((b: any) => b.is_primary)
-            setValue('budget_id', primary ? primary.id : budgetJson.budgets[0].id)
+            
+            if (savedId && budgetJson.budgets.find((b: any) => b.id === savedId)) {
+              setValue('budget_id', savedId)
+            } else {
+              setValue('budget_id', primary ? primary.id : budgetJson.budgets[0].id)
+            }
           }
         }
         

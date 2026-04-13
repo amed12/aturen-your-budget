@@ -60,8 +60,14 @@ export function ReservedClient() {
       }
 
       setBudgets(budgetJson.budgets)
+      const savedId = typeof window !== 'undefined' ? localStorage.getItem('last_selected_budget_id') : null
       const primary = budgetJson.budgets.find((b: any) => b.is_primary)
-      setSelectedBudgetId(primary ? primary.id : budgetJson.budgets[0].id)
+
+      if (savedId && budgetJson.budgets.find((b: any) => b.id === savedId)) {
+        setSelectedBudgetId(savedId)
+      } else {
+        setSelectedBudgetId(primary ? primary.id : budgetJson.budgets[0].id)
+      }
     } catch {
       toast.error('Gagal memuat budget')
       setIsLoading(false)
@@ -82,7 +88,9 @@ export function ReservedClient() {
   }
 
   const handleBudgetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedBudgetId(e.target.value)
+    const val = e.target.value
+    setSelectedBudgetId(val)
+    if (typeof window !== 'undefined') localStorage.setItem('last_selected_budget_id', val)
   }
 
   const togglePaid = async (item: ReservedItem) => {

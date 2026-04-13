@@ -65,8 +65,16 @@ export function DashboardClient() {
       setBudgets(budgetJson.budgets)
       
       if (!currentBudgetId || !budgetJson.budgets.find((b: any) => b.id === currentBudgetId)) {
+        const savedId = typeof window !== 'undefined' ? localStorage.getItem('last_selected_budget_id') : null
         const primary = budgetJson.budgets.find((b: any) => b.is_primary)
-        currentBudgetId = primary ? primary.id : budgetJson.budgets[0].id
+        
+        if (savedId && budgetJson.budgets.find((b: any) => b.id === savedId)) {
+          currentBudgetId = savedId
+        } else if (primary) {
+          currentBudgetId = primary.id
+        } else {
+          currentBudgetId = budgetJson.budgets[0].id
+        }
         setSelectedBudgetId(currentBudgetId)
       }
 
@@ -89,6 +97,7 @@ export function DashboardClient() {
   const handleBudgetChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const id = e.target.value
     setSelectedBudgetId(id)
+    if (typeof window !== 'undefined') localStorage.setItem('last_selected_budget_id', id)
     fetchDashboard(id)
   }
 
