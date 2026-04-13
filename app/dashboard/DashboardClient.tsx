@@ -206,7 +206,7 @@ export function DashboardClient() {
 
   const usagePercent = data.total_budget > 0 
     ? Math.min(100, Math.round(((data.total_budget - data.remaining_budget) / data.total_budget) * 100))
-    : 0
+    : (data.total_spent > 0 ? 100 : 0)
 
   let progressColor = 'bg-success-500'
   if (usagePercent > 70) progressColor = 'bg-warning-500'

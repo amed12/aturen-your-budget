@@ -25,7 +25,21 @@ export async function GET(request: Request) {
       })
     ])
 
-    const total_amount = Number(budget.total_amount)
+    const total_amount_raw = Number(budget.total_amount)
+
+    // Self-heal: recalculate total_amount from actual incomes if they exist
+    const allIncomes = await prisma.income.findMany({ where: { budget_id } })
+    const incomeSum = allIncomes.reduce((acc, inc) => acc + Number(inc.amount), 0)
+    
+    // If incomes exist but total_amount is stale/zero, fix it
+    if (incomeSum > 0 && Math.abs(incomeSum - total_amount_raw) > 0.01) {
+      await prisma.budget.update({
+        where: { id: budget_id },
+        data: { total_amount: incomeSum }
+      })
+    }
+
+    const total_amount = incomeSum > 0 ? incomeSum : total_amount_raw
     
     // Only unpaid reserved items subtract from our real spending pool here if we count actual expenses
     // But PRD Logic: Spendable budget = total_budget - sum(reserved_not_paid)
