@@ -16,7 +16,7 @@ export async function GET(request: Request) {
       where: {
         budget_id: budgetId,
         budget: {
-          user_id: session.user_id
+          user_id: session.user_id as string
         }
       },
       orderBy: {

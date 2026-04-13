@@ -20,7 +20,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
       include: { budget: true }
     })
 
-    if (!income || income.budget.user_id !== session.user_id) {
+    if (!income || income.budget.user_id !== session.user_id as string) {
       return apiError('Income not found', 404)
     }
 
@@ -54,7 +54,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
       include: { budget: true }
     })
 
-    if (!income || income.budget.user_id !== session.user_id) {
+    if (!income || income.budget.user_id !== session.user_id as string) {
       return apiError('Income not found', 404)
     }
 
