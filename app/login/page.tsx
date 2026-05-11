@@ -37,7 +37,7 @@ export default function LoginPage() {
       if (!res.ok) {
         toast.error(json.error || 'Gagal login')
       } else {
-        toast.success('Login berhasil')
+        toast.success('Login berhasil ✨')
         router.push('/dashboard')
         router.refresh()
       }
@@ -49,50 +49,78 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-screen items-center justify-center p-6 bg-white">
-      <div className="w-full max-w-sm space-y-8">
-        <div className="text-center">
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Aturen</h1>
-          <p className="text-gray-500 mt-2">Masuk untuk mengelola keuangan keluarga</p>
+    <div 
+      className="flex flex-col min-h-screen items-center justify-center p-6"
+      style={{ background: 'linear-gradient(165deg, #FFF8F3 0%, #FFE8D6 50%, #FFF5EE 100%)' }}
+    >
+      <div className="w-full max-w-sm space-y-8 animate-fadeInUp">
+        {/* Logo & Greeting */}
+        <div className="text-center space-y-3">
+          <div className="text-5xl mb-2 animate-float">👋</div>
+          <h1 
+            className="text-3xl font-extrabold tracking-tight"
+            style={{ fontFamily: 'var(--font-nunito), sans-serif', color: '#3D2C2E' }}
+          >
+            Halo, Mama!
+          </h1>
+          <p className="text-[#8B7E74] text-sm">Masuk dulu yuk, biar keuangannya rapi ✨</p>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Username</label>
-            <input
-              {...register('username')}
-              type="text"
-              autoCapitalize="none"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-3 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="nama.anda"
-            />
-            {errors.username && <p className="mt-1 text-sm text-red-500">{errors.username.message}</p>}
-          </div>
+        {/* Form Card */}
+        <div className="glass-card-strong rounded-3xl p-6">
+          <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
+            <div>
+              <label 
+                className="block text-xs font-bold uppercase tracking-wider mb-2" 
+                style={{ fontFamily: 'var(--font-nunito), sans-serif', color: '#8B7E74' }}
+              >
+                Username
+              </label>
+              <input
+                {...register('username')}
+                type="text"
+                autoCapitalize="none"
+                className="block w-full rounded-2xl border-2 border-primary-100 px-4 py-3.5 text-[#3D2C2E] bg-primary-50/30 focus:outline-none transition-all placeholder:text-[#B0A59D]"
+                placeholder="nama.kamu"
+              />
+              {errors.username && <p className="mt-1.5 text-sm text-danger-500 font-medium">{errors.username.message}</p>}
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700">Password</label>
-            <input
-              {...register('password')}
-              type="password"
-              className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-3 text-gray-900 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500"
-              placeholder="••••••••"
-            />
-            {errors.password && <p className="mt-1 text-sm text-red-500">{errors.password.message}</p>}
-          </div>
+            <div>
+              <label 
+                className="block text-xs font-bold uppercase tracking-wider mb-2" 
+                style={{ fontFamily: 'var(--font-nunito), sans-serif', color: '#8B7E74' }}
+              >
+                Password
+              </label>
+              <input
+                {...register('password')}
+                type="password"
+                className="block w-full rounded-2xl border-2 border-primary-100 px-4 py-3.5 text-[#3D2C2E] bg-primary-50/30 focus:outline-none transition-all placeholder:text-[#B0A59D]"
+                placeholder="••••••••"
+              />
+              {errors.password && <p className="mt-1.5 text-sm text-danger-500 font-medium">{errors.password.message}</p>}
+            </div>
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:bg-primary-300"
-          >
-            {isLoading ? 'Memproses...' : 'Masuk'}
-          </button>
-        </form>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full py-4 px-4 rounded-2xl text-base font-bold text-white press-effect transition-all disabled:opacity-50"
+              style={{
+                fontFamily: 'var(--font-nunito), sans-serif',
+                background: 'linear-gradient(135deg, #E8A87C 0%, #D4845A 100%)',
+                boxShadow: '0 4px 16px rgba(212, 132, 90, 0.3)',
+              }}
+            >
+              {isLoading ? 'Memproses...' : 'Masuk 🚀'}
+            </button>
+          </form>
+        </div>
 
-        <p className="text-center text-sm text-gray-600">
+        <p className="text-center text-sm text-[#8B7E74]">
           Belum punya akun?{' '}
-          <Link href="/register" className="font-medium text-primary-600 hover:text-primary-500">
-            Daftar sekarang
+          <Link href="/register" className="font-bold text-primary-600 hover:text-primary-500">
+            Yuk daftar dulu! ✨
           </Link>
         </p>
       </div>
