@@ -15,6 +15,33 @@ type DetailData = { total_filtered: number; count: number; expenses: Expense[] }
 
 const nunito = { fontFamily: 'var(--font-nunito), sans-serif' }
 
+const renderNoteWithLink = (note: string | null) => {
+  if (!note) return 'Tanpa catatan'
+  
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const parts = note.split(urlRegex)
+  
+  if (parts.length === 1) return note
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-primary-500 hover:text-primary-600 hover:underline font-bold break-all inline-flex items-center gap-0.5"
+        >
+          {part} 🔗
+        </a>
+      )
+    }
+    return part
+  })
+}
+
 const categoryColors = [
   'linear-gradient(90deg, #E8A87C, #D4845A)', 'linear-gradient(90deg, #95B8D1, #6490B3)',
   'linear-gradient(90deg, #85BDA6, #518A72)', 'linear-gradient(90deg, #F2C57C, #CC9235)',
@@ -268,7 +295,7 @@ function ReportsContent() {
                 </div>
                 <div className="flex justify-between items-center mt-1">
                   <div className="flex flex-col">
-                    <span className="font-semibold truncate max-w-[150px] sm:max-w-[200px]" style={{ color: '#3D2C2E' }}>{exp.note || 'Tanpa catatan'}</span>
+                    <span className="font-semibold truncate max-w-[150px] sm:max-w-[200px] text-sm leading-relaxed" style={{ color: '#3D2C2E' }}>{renderNoteWithLink(exp.note)}</span>
                     <span className="text-[11px] text-[#B0A59D] font-medium flex items-center gap-1 mt-0.5"><Calendar size={10} />{new Date(exp.date).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' })}</span>
                   </div>
                   <div className="flex flex-col items-end gap-1.5">

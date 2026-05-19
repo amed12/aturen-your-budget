@@ -24,6 +24,33 @@ type DashboardData = {
 
 const nunito = { fontFamily: 'var(--font-nunito), sans-serif' }
 
+const renderNoteWithLink = (note: string | null) => {
+  if (!note) return 'Tanpa catatan'
+  
+  const urlRegex = /(https?:\/\/[^\s]+)/g
+  const parts = note.split(urlRegex)
+  
+  if (parts.length === 1) return note
+
+  return parts.map((part, index) => {
+    if (part.match(urlRegex)) {
+      return (
+        <a
+          key={index}
+          href={part}
+          target="_blank"
+          rel="noopener noreferrer"
+          onClick={(e) => e.stopPropagation()}
+          className="text-primary-500 hover:text-primary-600 hover:underline font-bold break-all inline-flex items-center gap-0.5"
+        >
+          {part} 🔗
+        </a>
+      )
+    }
+    return part
+  })
+}
+
 export function DashboardClient() {
   const [budgets, setBudgets] = useState<Budget[]>([])
   const [selectedBudgetId, setSelectedBudgetId] = useState<string | null>(null)
@@ -263,7 +290,7 @@ export function DashboardClient() {
             <div key={exp.id} className="glass-card rounded-2xl p-4 flex justify-between items-center press-effect transition-transform animate-fadeInUp">
               <div className="flex flex-col">
                 <span className="text-xs font-bold text-primary-600 uppercase tracking-wider mb-0.5" style={nunito}>{exp.category_name}</span>
-                <span className="font-semibold" style={{ color: '#3D2C2E' }}>{exp.note || 'Tanpa catatan'}</span>
+                <span className="font-semibold text-sm leading-relaxed" style={{ color: '#3D2C2E' }}>{renderNoteWithLink(exp.note)}</span>
                 <span className="text-xs text-[#B0A59D]">{new Date(exp.date).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })}</span>
               </div>
               <div className="text-right flex items-center gap-2">
